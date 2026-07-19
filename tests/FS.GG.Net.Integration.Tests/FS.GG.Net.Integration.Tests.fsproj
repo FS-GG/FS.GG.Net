@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <GenerateProgramFile>false</GenerateProgramFile>
+  </PropertyGroup>
+
+  <!-- Kestrel + WebSockets, to host an in-process echo server that exercises the REAL
+       ClientWebSocket transport (fragment reassembly, connect-retry) — the closest proxy to the
+       SC2 headless server without a live game. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="EchoServer.fs" />
+    <Compile Include="Tests.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\FS.GG.Net.Core\FS.GG.Net.Core.fsproj" />
+    <ProjectReference Include="..\..\src\FS.GG.Net.WebSocket\FS.GG.Net.WebSocket.fsproj" />
+    <ProjectReference Include="..\..\src\FS.GG.Net.Protobuf\FS.GG.Net.Protobuf.fsproj" />
+    <ProjectReference Include="..\..\src\FS.GG.Net.Grpc\FS.GG.Net.Grpc.fsproj" />
+    <ProjectReference Include="..\..\src\FS.GG.Net.Elmish\FS.GG.Net.Elmish.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="protobuf-net" />
+    <PackageReference Include="protobuf-net-fsharp" />
+    <PackageReference Include="Elmish" />
+    <PackageReference Include="Expecto" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="YoloDev.Expecto.TestSdk" />
+  </ItemGroup>
+
+</Project>

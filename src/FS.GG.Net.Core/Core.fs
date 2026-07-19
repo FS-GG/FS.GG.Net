@@ -28,6 +28,10 @@ type IdEcho<'Req, 'Resp> =
     { Stamp: 'Req -> uint64 -> 'Req
       Read: 'Resp -> uint64 }
 
+type ServerEcho<'Req, 'Resp> =
+    { ReadId: 'Req -> uint64
+      StampId: 'Resp -> uint64 -> 'Resp }
+
 type Correlation<'Req, 'Resp> =
     | Sequential of idEcho: IdEcho<'Req, 'Resp> option
     | Multiplexed of idEcho: IdEcho<'Req, 'Resp>
@@ -238,3 +242,60 @@ module MessageChannel =
         match correlation with
         | Sequential idEcho -> createSequential transport requestCodec responseCodec idEcho
         | Multiplexed idEcho -> createMultiplexed transport requestCodec responseCodec idEcho
+
+    let serve
+        (transport: ITransport)
+        (requestCodec: IMessageCodec<'Req>)
+        (responseCodec: IMessageCodec<'Resp>)
+        (echo: ServerEcho<'Req, 'Resp> option)
+        (handler: 'Req -> Task<'Resp>)
+        : Task =
+        task {
+            // A WebSocket forbids concurrent sends, so serialise responses through a 1-permit gate.
+            let sendGate = new SemaphoreSlim(1, 1)
+
+            let handleOne (request: 'Req) : Task =
+                task {
+                    try
+                        let! response = handler request
+
+                        let response =
+                            match echo with
+                            | Some e -> e.StampId response (e.ReadId request)
+                            | None -> response
+
+                        do! sendGate.WaitAsync()
+
+                        try
+                            do! transport.Send(responseCodec.Encode response, CancellationToken.None)
+                        finally
+                            sendGate.Release() |> ignore
+                    with _ ->
+                        // A failed request must not drop the connection.
+                        ()
+                }
+
+            let inflight = ResizeArray<Task>()
+            let e = transport.Receive.GetAsyncEnumerator(CancellationToken.None)
+            let mutable go = true
+
+            while go do
+                let! moved = e.MoveNextAsync()
+
+                if not moved then
+                    go <- false
+                else
+                    let request = requestCodec.Decode e.Current
+
+                    match echo with
+                    | Some _ ->
+                        // Concurrent: id-echo lets replies go out in any order. Prune finished ones.
+                        inflight.Add(handleOne request)
+                        inflight.RemoveAll(fun t -> t.IsCompleted) |> ignore
+                    | None ->
+                        // No id to correlate on: handle one at a time and reply in arrival order.
+                        do! handleOne request
+
+            do! Task.WhenAll inflight
+            sendGate.Dispose()
+        }

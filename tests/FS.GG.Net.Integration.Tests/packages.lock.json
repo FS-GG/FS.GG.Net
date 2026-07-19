@@ -216,6 +216,14 @@
           "FSharp.Core": "[10.1.301, )"
         }
       },
+      "fs.gg.net.websocket.server": {
+        "type": "Project",
+        "dependencies": {
+          "FS.GG.Net.Core": "[0.1.0, )",
+          "FS.GG.Net.WebSocket": "[0.1.0, )",
+          "FSharp.Core": "[10.1.301, )"
+        }
+      },
       "grpcservice.contracts": {
         "type": "Project",
         "dependencies": {

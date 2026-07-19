@@ -1,6 +1,7 @@
 namespace FS.GG.Net.WebSocket
 
 open System
+open System.Net.WebSockets
 open System.Threading
 open System.Threading.Tasks
 open FS.GG.Net.Core
@@ -27,6 +28,11 @@ module WebSocketOptions =
 /// Public contract exposed by this FS.GG.Net.WebSocket package.
 [<RequireQualifiedAccess>]
 module WebSocketTransport =
+    /// Wrap an already-open WebSocket — client-connected or server-accepted — as an ITransport,
+    /// reusing the same fragment reassembly and pooled receive buffer. The server package accepts a
+    /// connection and hands the socket here.
+    val ofSocket: socket: WebSocket -> options: WebSocketOptions -> ITransport
+
     /// Connect a client WebSocket transport to `uri` (e.g. ws://127.0.0.1:5000/sc2api), retrying the
     /// initial connect per `options`. The returned transport's `Receive` yields COMPLETE application
     /// messages (continuation frames reassembled); `Send` writes one binary message. Disposing closes

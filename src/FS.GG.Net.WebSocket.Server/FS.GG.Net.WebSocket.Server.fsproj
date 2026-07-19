@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackageId>FS.GG.Net.WebSocket.Server</PackageId>
+    <Version>$(FsGgNetVersion)</Version>
+    <Authors>FS-GG</Authors>
+    <Description>Server-side WebSocket transport for the FS.GG.Net component — a Kestrel-hosted acceptor that hands each accepted connection to a handler as an ITransport, reusing FS.GG.Net.WebSocket's fragment reassembly + pooled buffers. Pair with MessageChannel.serve to serve a protobuf-over-WebSocket protocol. The additive server package ADR-0052 deferred from v1.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Server.fsi" />
+    <Compile Include="Server.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FS.GG.Net.Core\FS.GG.Net.Core.fsproj" />
+    <ProjectReference Include="..\FS.GG.Net.WebSocket\FS.GG.Net.WebSocket.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+  </ItemGroup>
+
+</Project>

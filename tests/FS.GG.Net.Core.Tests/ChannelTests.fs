@@ -72,6 +72,26 @@ type ManualTransport() =
             inbound.Writer.TryComplete() |> ignore
             ValueTask.CompletedTask
 
+/// One end of an in-memory duplex link: sends on `outbound`, receives on `inbound`.
+type private LinkedTransport(outbound: Channel<ReadOnlyMemory<byte>>, inbound: Channel<ReadOnlyMemory<byte>>) =
+    interface ITransport with
+        member _.State = Connected
+        member _.Receive = inbound.Reader.ReadAllAsync()
+
+        member _.Send(message: ReadOnlyMemory<byte>, _ct: CancellationToken) : ValueTask =
+            outbound.Writer.TryWrite message |> ignore
+            ValueTask.CompletedTask
+
+        member _.DisposeAsync() : ValueTask =
+            outbound.Writer.TryComplete() |> ignore
+            ValueTask.CompletedTask
+
+/// A connected pair of transports: whatever one sends, the other receives.
+let private pair () : ITransport * ITransport =
+    let a2b = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
+    let b2a = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
+    LinkedTransport(a2b, b2a) :> ITransport, LinkedTransport(b2a, a2b) :> ITransport
+
 [<Tests>]
 let tests =
     testList
@@ -167,4 +187,26 @@ let tests =
               let! rb = tb |> Async.AwaitTask
               Expect.equal ra.Text "reply:A" "exchange A got A's response despite out-of-order delivery"
               Expect.equal rb.Text "reply:B" "exchange B got B's response"
+          }
+
+          testCaseAsync "serve + ServerEcho answers a Multiplexed client over a linked transport"
+          <| async {
+              // The server side (MessageChannel.serve, id-echoed, concurrent) wired to a Multiplexed
+              // client over an in-memory duplex pair — the full client/server correlation loop.
+              let clientEnd, serverEnd = pair ()
+
+              let serverEcho: ServerEcho<Env, Env> =
+                  { ReadId = fun m -> m.Id
+                    StampId = fun m id -> { m with Id = id } }
+
+              let handler (req: Env) : Task<Env> = Task.FromResult { req with Text = "ok:" + req.Text }
+              let _serveLoop = MessageChannel.serve serverEnd codec codec (Some serverEcho) handler
+
+              let channel = MessageChannel.create clientEnd codec codec (Multiplexed idEcho)
+              let ta = channel.Exchange({ Id = 0UL; Text = "A" }, CancellationToken.None)
+              let tb = channel.Exchange({ Id = 0UL; Text = "B" }, CancellationToken.None)
+              let! ra = ta |> Async.AwaitTask
+              let! rb = tb |> Async.AwaitTask
+              Expect.equal ra.Text "ok:A" "server answered A (id-echoed)"
+              Expect.equal rb.Text "ok:B" "server answered B (id-echoed)"
           } ]

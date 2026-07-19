@@ -14,6 +14,7 @@ open GrpcService.Contracts
 open FS.GG.Net.Core
 open FS.GG.Net.Protobuf
 open FS.GG.Net.WebSocket
+open FS.GG.Net.WebSocket.Server
 open FS.GG.Net.Grpc
 open FS.GG.Net.Elmish
 
@@ -207,4 +208,34 @@ let tests =
               | _ -> ()
 
               do! server.Stop () |> Async.AwaitTask
+          }
+
+          testCaseAsync "WebSocket server: protobuf request/response via WebSocketServer + serve"
+          <| async {
+              // The server side of the whole stack: WebSocketServer accepts a connection, wraps it as
+              // an ITransport (ofSocket), and MessageChannel.serve replies to each request.
+              let codec = Codec.google StringValue.Parser
+
+              let handler (req: StringValue) : Task<StringValue> =
+                  Task.FromResult(StringValue(Value = "echo:" + req.Value))
+
+              let! server =
+                  WebSocketServer.start
+                      (Uri "ws://127.0.0.1:0/")
+                      WebSocketOptions.defaults
+                      (fun transport -> MessageChannel.serve transport codec codec None handler)
+                  |> Async.AwaitTask
+
+              // A real client, connecting to the server's ephemeral bound address.
+              let! clientTransport =
+                  WebSocketTransport.connectAsync server.Uri WebSocketOptions.defaults CancellationToken.None
+                  |> Async.AwaitTask
+
+              let channel = MessageChannel.create clientTransport codec codec (Sequential None)
+              let! r1 = channel.Exchange(StringValue(Value = "one"), CancellationToken.None) |> Async.AwaitTask
+              let! r2 = channel.Exchange(StringValue(Value = "two"), CancellationToken.None) |> Async.AwaitTask
+              Expect.equal r1.Value "echo:one" "first request served"
+              Expect.equal r2.Value "echo:two" "second request served"
+              do! channel.DisposeAsync().AsTask() |> Async.AwaitTask
+              do! server.StopAsync() |> Async.AwaitTask
           } ]

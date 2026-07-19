@@ -46,6 +46,16 @@ type IdEcho<'Req, 'Resp> =
       Read: 'Resp -> uint64 }
 
 /// Public contract type exposed by this FS.GG.Net.Core package.
+/// The server-side mirror of `IdEcho`: read the correlation id off an inbound request, and stamp it
+/// onto the outgoing response, so the client's correlator can match the reply to its request. (SC2's
+/// server does exactly this — `Response.id` echoes `Request.id`, field 97.)
+type ServerEcho<'Req, 'Resp> =
+    { /// Read the correlation id off an inbound request.
+      ReadId: 'Req -> uint64
+      /// Return the response carrying that id (echoed back to the client).
+      StampId: 'Resp -> uint64 -> 'Resp }
+
+/// Public contract type exposed by this FS.GG.Net.Core package.
 /// How responses are matched to requests on a message channel. The two axes — matching (by order vs
 /// by id) and concurrency (single-in-flight vs pipelined) — collapse to the two sane combinations.
 type Correlation<'Req, 'Resp> =
@@ -87,3 +97,16 @@ module MessageChannel =
         responseCodec: IMessageCodec<'Resp> ->
         correlation: Correlation<'Req, 'Resp> ->
             IMessageChannel<'Req, 'Resp>
+
+    /// Serve inbound requests on a transport — the server side of a channel. Decodes each request,
+    /// runs `handler`, and sends the response, id-echoed via `echo` so the client's correlator matches
+    /// it. With `echo`, requests are handled concurrently and replies may go out in any order; without
+    /// it, requests are handled one at a time and replied in arrival order. A handler that throws is
+    /// swallowed (a bad request must not drop the connection). Completes when the transport closes.
+    val serve:
+        transport: ITransport ->
+        requestCodec: IMessageCodec<'Req> ->
+        responseCodec: IMessageCodec<'Resp> ->
+        echo: ServerEcho<'Req, 'Resp> option ->
+        handler: ('Req -> Task<'Resp>) ->
+            Task

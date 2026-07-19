@@ -1,6 +1,7 @@
 namespace FS.GG.Net.Core
 
 open System
+open System.Collections.Concurrent
 open System.Collections.Generic
 open System.Threading
 open System.Threading.Channels
@@ -150,6 +151,84 @@ module MessageChannel =
                 gate.Dispose()
                 transport.DisposeAsync() }
 
+    /// The Multiplexed channel: many requests in flight at once. Each Exchange stamps a unique,
+    /// monotonic id, registers its waiter in a concurrent map keyed by that id, and sends. The
+    /// background loop matches each response to its waiter by the echoed id (routing an id it does not
+    /// recognise to `Incoming`), so responses may arrive in any order. No gate serialises callers.
+    let private createMultiplexed
+        (transport: ITransport)
+        (requestCodec: IMessageCodec<'Req>)
+        (responseCodec: IMessageCodec<'Resp>)
+        (idEcho: IdEcho<'Req, 'Resp>)
+        : IMessageChannel<'Req, 'Resp> =
+
+        let pending = ConcurrentDictionary<uint64, TaskCompletionSource<'Resp>>()
+        let incoming = Channel.CreateUnbounded<'Resp>()
+        let loopCts = new CancellationTokenSource()
+        // A boxed counter so Interlocked can take its address (a captured `let mutable` cannot).
+        let counter = [| 0L |]
+
+        let faultAll (ex: exn) =
+            for kv in pending do
+                kv.Value.TrySetException ex |> ignore
+
+        let receiveLoop () : Task =
+            task {
+                try
+                    let e = transport.Receive.GetAsyncEnumerator(loopCts.Token)
+                    let mutable go = true
+
+                    while go do
+                        let! moved = e.MoveNextAsync()
+
+                        if not moved then
+                            go <- false
+                        else
+                            let resp = responseCodec.Decode e.Current
+
+                            match pending.TryRemove(idEcho.Read resp) with
+                            | true, tcs -> tcs.TrySetResult resp |> ignore
+                            | false, _ -> incoming.Writer.TryWrite resp |> ignore
+
+                    incoming.Writer.TryComplete() |> ignore
+                    faultAll (Exception "channel closed with request(s) outstanding")
+                with ex ->
+                    faultAll ex
+                    incoming.Writer.TryComplete ex |> ignore
+            }
+
+        let loop = receiveLoop ()
+
+        { new IMessageChannel<'Req, 'Resp> with
+            member _.State = transport.State
+            member _.Incoming = incoming.Reader.ReadAllAsync()
+
+            member _.Exchange(request: 'Req, ct: CancellationToken) : Task<'Resp> =
+                task {
+                    let id = uint64 (Interlocked.Increment(&counter[0]))
+
+                    let tcs =
+                        TaskCompletionSource<'Resp>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+                    pending[id] <- tcs
+                    use _reg = ct.Register(fun () -> tcs.TrySetCanceled ct |> ignore)
+
+                    try
+                        do! transport.Send(requestCodec.Encode(idEcho.Stamp request id), ct)
+                        return! tcs.Task
+                    finally
+                        // Success path: the loop already removed it. Cancel/fault path: remove it here
+                        // so a late response cannot land on a dead waiter.
+                        pending.TryRemove id |> ignore
+                }
+
+            member _.DisposeAsync() : ValueTask =
+                loopCts.Cancel()
+                incoming.Writer.TryComplete() |> ignore
+                faultAll (Exception "channel disposed")
+                loop |> ignore
+                transport.DisposeAsync() }
+
     let create
         (transport: ITransport)
         (requestCodec: IMessageCodec<'Req>)
@@ -158,7 +237,4 @@ module MessageChannel =
         : IMessageChannel<'Req, 'Resp> =
         match correlation with
         | Sequential idEcho -> createSequential transport requestCodec responseCodec idEcho
-        | Multiplexed _ ->
-            // Pipelined id-matched correlation is reserved for a follow-up (ADR-0052 ships Sequential
-            // first, driven by the SC2 vertical slice). Fail loudly rather than pretend.
-            failwith "MessageChannel: Multiplexed correlation is not yet implemented (v1 ships Sequential; ADR-0052)."
+        | Multiplexed idEcho -> createMultiplexed transport requestCodec responseCodec idEcho

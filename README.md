@@ -42,5 +42,4 @@ dotnet test           # FS.GG.Net.Core.Tests (Expecto) — the Sequential correl
 ## Not in v1 (deliberately)
 
 - **No WebSocket server host** — both first uses are clients (the SC2 game *is* the server; the BAR proxy is a gRPC server). A `FS.GG.Net.WebSocket.Server` becomes an additive package when a real use case appears.
-- **`Multiplexed` correlation** is reserved — `MessageChannel.create` raises on it. v1 ships `Sequential`, driven by the SC2 slice.
 - The **wire-contract registry dimension** (vendored external `.proto`, owned `.proto`, code-first surface) is an org-level change tracked in ADR-0052; it lands via the SDD-first schema-growth sequence.

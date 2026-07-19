@@ -79,7 +79,8 @@ exception CorrelationMismatch of expected: uint64 * actual: uint64
 module MessageChannel =
     /// Build a message channel over `transport`, using the given codecs and correlation strategy.
     /// The channel owns the transport's receive loop; disposing the channel disposes the transport.
-    /// v1 implements `Sequential`; `Multiplexed` is reserved (raises until implemented — ADR-0052).
+    /// `Sequential` runs one exchange at a time (SC2's lockstep); `Multiplexed` allows many in flight,
+    /// matched by echoed id.
     val create:
         transport: ITransport ->
         requestCodec: IMessageCodec<'Req> ->

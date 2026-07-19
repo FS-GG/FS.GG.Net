@@ -52,6 +52,26 @@ type FakeTransport(respondTo: ReadOnlyMemory<byte> -> ReadOnlyMemory<byte> optio
             inbound.Writer.TryComplete() |> ignore
             ValueTask.CompletedTask
 
+/// A transport whose replies the TEST drives: `Send` only records the request bytes; `Respond` pushes
+/// a response. Lets a test reply out of order, to prove Multiplexed matches by id, not arrival order.
+type ManualTransport() =
+    let inbound = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
+    let sent = System.Collections.Concurrent.ConcurrentQueue<ReadOnlyMemory<byte>>()
+    member _.Sent = sent
+    member _.Respond(bytes: ReadOnlyMemory<byte>) = inbound.Writer.TryWrite bytes |> ignore
+
+    interface ITransport with
+        member _.State = Connected
+        member _.Receive = inbound.Reader.ReadAllAsync()
+
+        member _.Send(message: ReadOnlyMemory<byte>, _ct: CancellationToken) : ValueTask =
+            sent.Enqueue message
+            ValueTask.CompletedTask
+
+        member _.DisposeAsync() : ValueTask =
+            inbound.Writer.TryComplete() |> ignore
+            ValueTask.CompletedTask
+
 [<Tests>]
 let tests =
     testList
@@ -119,4 +139,32 @@ let tests =
                   |> Async.AwaitTask
 
               Expect.equal first.Text "push" "unsolicited message surfaced on Incoming"
+          }
+
+          testCaseAsync "Multiplexed matches concurrent responses by id, out of order"
+          <| async {
+              let transport = ManualTransport()
+
+              let channel =
+                  MessageChannel.create (transport :> ITransport) codec codec (Multiplexed idEcho)
+
+              // Two exchanges in flight at once.
+              let ta = channel.Exchange({ Id = 0UL; Text = "A" }, CancellationToken.None)
+              let tb = channel.Exchange({ Id = 0UL; Text = "B" }, CancellationToken.None)
+
+              // Wait until both requests have been sent, then learn their stamped ids.
+              while transport.Sent.Count < 2 do
+                  do! Async.Sleep 5
+
+              let reqs = transport.Sent.ToArray() |> Array.map codec.Decode
+
+              // Reply in REVERSE send order — the point is that the echoed id, not arrival order,
+              // routes each response to its own waiter.
+              for r in Array.rev reqs do
+                  transport.Respond(codec.Encode { r with Text = "reply:" + r.Text })
+
+              let! ra = ta |> Async.AwaitTask
+              let! rb = tb |> Async.AwaitTask
+              Expect.equal ra.Text "reply:A" "exchange A got A's response despite out-of-order delivery"
+              Expect.equal rb.Text "reply:B" "exchange B got B's response"
           } ]

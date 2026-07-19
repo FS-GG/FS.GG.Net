@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- The generated SC2 protobuf types (from the vendored s2clientprotocol .proto). -->
+    <ProjectReference Include="..\Sc2.Protocol\Sc2.Protocol.csproj" />
+    <!-- The FS.GG.Net stack this sample exercises. -->
+    <ProjectReference Include="..\..\..\src\FS.GG.Net.Core\FS.GG.Net.Core.fsproj" />
+    <ProjectReference Include="..\..\..\src\FS.GG.Net.WebSocket\FS.GG.Net.WebSocket.fsproj" />
+    <ProjectReference Include="..\..\..\src\FS.GG.Net.Protobuf\FS.GG.Net.Protobuf.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Google.Protobuf" />
+  </ItemGroup>
+
+</Project>

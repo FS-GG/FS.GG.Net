@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <!-- Generated protobuf C# is vendored code, not our surface — it is not warnings-as-errors
+         clean, so this project opts out of the repo-wide TreatWarningsAsErrors. -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Nullable>disable</Nullable>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="Grpc.Tools" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Generate C# message types for the whole vendored s2clientprotocol set. No gRPC services —
+       SC2 is raw protobuf over a WebSocket, not gRPC. ProtoRoot lets the `s2clientprotocol/...`
+       imports resolve. -->
+  <ItemGroup>
+    <Protobuf Include="..\proto\s2clientprotocol\*.proto" ProtoRoot="..\proto" GrpcServices="None" />
+  </ItemGroup>
+
+</Project>

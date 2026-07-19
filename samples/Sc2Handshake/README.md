@@ -1,55 +1,60 @@
-# Sample: SC2 handshake (the v1 vertical slice)
+# Sample: SC2 handshake
 
-The vertical slice ADR-0052 names as the evidence the seams are right before freezing `0.1.0`:
-`Core` + `WebSocket` + `Protobuf` driving a minimal StarCraft II handshake against a **real headless
-server** — connect → `Ping` → `CreateGame`/`JoinGame` → step one `Observation`.
+A **real, runnable** StarCraft II client built on FS.GG.Net — the worked example behind ADR-0052. It
+drives a full game handshake against Blizzard's headless SC2 server entirely over the FS.GG.Net stack:
 
-This sample is a **recipe**, not a compiled project: it needs the Blizzard-owned `s2clientprotocol`
-`.proto` (vendored + generated into an app repo, per the schema-lives-in-the-app boundary), which is
-intentionally *not* part of the stable `FS.GG.Net` core.
-
-## Shape
-
-```fsharp
-open System
-open System.Threading
-open SC2APIProtocol            // generated from Blizzard/s2client-proto (Google.Protobuf / Grpc.Tools)
-open FS.GG.Net.Core
-open FS.GG.Net.Protobuf
-open FS.GG.Net.WebSocket
-
-// SC2's Request/Response both carry `id` (proto field 97) — the desync guard.
-let idEcho : IdEcho<Request, Response> =
-    { Stamp = fun (r: Request) id -> r.Id <- uint32 id; r     // Google.Protobuf types are mutable
-      Read  = fun (r: Response) -> uint64 r.Id }
-
-let run (port: int) = task {
-    // The game boots its process, THEN listens — connect-retry handles the gap.
-    let uri = Uri(sprintf "ws://127.0.0.1:%d/sc2api" port)
-    let! transport = WebSocketTransport.connectAsync uri WebSocketOptions.defaults CancellationToken.None
-
-    let channel =
-        MessageChannel.create
-            transport
-            (Codec.google Request.Parser)      // reproducible raw-bytes path — no gRPC channel
-            (Codec.google Response.Parser)
-            (Sequential (Some idEcho))          // single in-flight, id-verified
-
-    // 1. Ping
-    let! pong = channel.Exchange(Request(Ping = RequestPing()), CancellationToken.None)
-    printfn "SC2 %s (proto %d)" pong.Ping.GameVersion pong.Ping.DataVersion
-
-    // 2. CreateGame / JoinGame / RequestObservation follow the same Exchange shape.
-    //    Response.Status/Error are payload the app maps — the core never sees them.
-
-    do! (channel :> IAsyncDisposable).DisposeAsync()
-}
+```
+Ping → CreateGame → JoinGame(raw) → Observation → Step → Observation → LeaveGame → Quit
 ```
 
-## Why it proves the design
+Every step is a correlated protobuf `Request`/`Response` over a WebSocket — `WebSocketTransport` +
+`Codec.google` + `MessageChannel` with `Sequential (Some idEcho)` (SC2's `Request`/`Response` both
+carry `id`, proto field 97, so the id-verified correlator's desync guard is live).
 
-- Exercises **the entire net-new stack** — WebSocket transport, protobuf codec, `Sequential`
-  correlation — end to end, without touching gRPC.
-- The mutable-`Id` `Stamp`/`Read` is exactly why SC2 uses **Google.Protobuf** (mutable C# interop
-  types, rock-solid raw API) rather than FsGrpc for the external schema (ADR-0052 §4).
-- `Response.Status`/`Error` staying in the app confirms the schema-lives-in-the-app boundary holds.
+## Layout
+
+| Path | What |
+|---|---|
+| `proto/s2clientprotocol/*.proto` | The vendored SC2 protocol (MIT, Blizzard — see `proto/NOTICE.md`) |
+| `Sc2.Protocol/` | C# lib: `Grpc.Tools` generates `SC2APIProtocol.*` message types (no gRPC services — SC2 is raw protobuf over WS) |
+| `Sc2Handshake/` | The F# client: the handshake above, in ~90 lines over FS.GG.Net |
+
+It **builds anywhere** (the CI gate builds it) — but it can only **run** against a real SC2 install.
+
+## Running it against a real SC2 server
+
+There is no live SC2 in CI, so this is a local recipe. It works with the same headless package the
+[aiarena](https://github.com/aiarena/aiarena-docker-base) image wraps:
+
+```bash
+# 1. Get Blizzard's SC2 Linux headless package (the password IS the EULA acceptance).
+wget http://blzdistsc2-a.akamaihd.net/Linux/SC2.4.10.zip
+unzip -P iagreetotheeula SC2.4.10.zip -d ~/sc2/
+# SC2 resolves maps under a lowercase `maps/` on Linux:
+ln -sfn ~/sc2/StarCraftII/Maps ~/sc2/StarCraftII/maps
+
+# 2. Launch the headless server (it opens ws://127.0.0.1:5000/sc2api).
+cd ~/sc2/StarCraftII/Versions/Base75689
+./SC2_x64 -listen 127.0.0.1 -port 5000 -dataDir ~/sc2/StarCraftII/ -tempDir /tmp/sc2/ &
+
+# 3. Run the client (port, then a map path relative to Maps/).
+dotnet run --project Sc2Handshake -- 5000 "Ladder2019Season1/CyberForestLE.SC2Map"
+```
+
+Expected tail:
+
+```
+observation   -> status=InGame   game_loop=0  raw_units=161  observation_payload=46225 bytes
+step          -> status=InGame
+observation2  -> status=InGame   game_loop advanced 0 -> 112
+quit          -> status=Quit
+OK — full game handshake over FS.GG.Net ... against a REAL SC2 server.
+```
+
+## Notes for a fuller client
+
+- SC2's proto is **proto2** — an unset `optional` enum reads back as its *first* value, so check
+  `HasError` (not an enum comparison) before trusting `ResponseCreateGame.Error`.
+- `Sequential (Some idEcho)` is right for SC2: it is strictly lockstep, so one request is in flight at
+  a time, and the echoed `id` turns a lost/misordered response into a `CorrelationMismatch` instead of
+  a silently stale observation.

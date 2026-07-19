@@ -8,5 +8,6 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/FS.GG.Net.Core.Tests/FS.GG.Net.Core.Tests.fsproj" />
+    <Project Path="tests/FS.GG.Net.Integration.Tests/FS.GG.Net.Integration.Tests.fsproj" />
   </Folder>
 </Solution>

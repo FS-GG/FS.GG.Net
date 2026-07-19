@@ -14,6 +14,7 @@
     <Project Path="src/FS.GG.Net.Elmish/FS.GG.Net.Elmish.fsproj" />
     <Project Path="src/FS.GG.Net.Grpc/FS.GG.Net.Grpc.fsproj" />
     <Project Path="src/FS.GG.Net.Protobuf/FS.GG.Net.Protobuf.fsproj" />
+    <Project Path="src/FS.GG.Net.WebSocket.Server/FS.GG.Net.WebSocket.Server.fsproj" />
     <Project Path="src/FS.GG.Net.WebSocket/FS.GG.Net.WebSocket.fsproj" />
   </Folder>
   <Folder Name="/tests/">

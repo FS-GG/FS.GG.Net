@@ -21,9 +21,10 @@ module WebSocketOptions =
           ConnectBackoff = TimeSpan.FromMilliseconds 250.0
           ReceiveBufferSize = 64 * 1024 }
 
-/// A client WebSocket ITransport. A background loop reassembles continuation frames into complete
-/// application messages and publishes them on an unbounded channel; the read buffer is pooled.
-type private ClientWsTransport(ws: ClientWebSocket, options: WebSocketOptions) =
+/// A WebSocket ITransport over any open socket (client-connected or server-accepted). A background
+/// loop reassembles continuation frames into complete application messages and publishes them on an
+/// unbounded channel; the read buffer is pooled.
+type private SocketTransport(ws: WebSocket, options: WebSocketOptions) =
     let inbound = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
     let loopCts = new CancellationTokenSource()
     let mutable state = Connected
@@ -94,6 +95,9 @@ type private ClientWsTransport(ws: ClientWebSocket, options: WebSocketOptions) =
 
 [<RequireQualifiedAccess>]
 module WebSocketTransport =
+    let ofSocket (socket: WebSocket) (options: WebSocketOptions) : ITransport =
+        new SocketTransport(socket, options) :> ITransport
+
     let connectAsync (uri: Uri) (options: WebSocketOptions) (ct: CancellationToken) : Task<ITransport> =
         task {
             let mutable attempt = 0
@@ -106,7 +110,7 @@ module WebSocketTransport =
 
                 try
                     do! ws.ConnectAsync(uri, ct)
-                    connected <- Some(new ClientWsTransport(ws, options) :> ITransport)
+                    connected <- Some(ofSocket ws options)
                 with ex ->
                     lastError <- ex
                     ws.Dispose()

@@ -1,0 +1,174 @@
+name: release
+
+# Release-only publish for FS.GG.Net. Tag-triggered; NEVER a required check and NEVER on push/PR
+# (mirrors the sibling FS-GG repos' release cadence). Publishes the coherent set
+# FS.GG.Net.Core + .WebSocket + .Protobuf + .Grpc + .Elmish to the org GitHub Packages feed
+# (nuget.pkg.github.com/FS-GG), then dual-publishes the BYTE-IDENTICAL set to public nuget.org via
+# Trusted Publishing / OIDC (ADR-0012/0013 — no stored key), gated on a green build+test first
+# (publish-before-flip).
+#
+# All five packages share ONE version — <FsGgNetVersion> in Directory.Packages.props (the
+# version-of-truth) — and move as a coherent set. WebSocket/Protobuf/Grpc/Elmish ProjectReferences to
+# Core are emitted as package dependencies at the same version.
+#
+# The nuget.org push needs the org Trusted Publishing policy `fs-gg-net-publishing`
+# (Paradigma11 / FS-GG/FS.GG.Net / release.yml); until it exists that step 401s and fails the release
+# loud. The org-feed push works with the built-in GITHUB_TOKEN.
+
+on:
+  release:
+    types: [published]
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to pack+publish (e.g. 0.1.0). Required to actually push on a manual run; omit for a pack-only dry run."
+        type: string
+        required: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify (locked restore + build + test)
+    runs-on: ubuntu-latest
+    if: github.repository == 'FS-GG/FS.GG.Net'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore (locked)
+        run: |
+          set -euo pipefail
+          if ! dotnet restore FS.GG.Net.slnx --locked-mode; then
+            echo "::error::locked restore failed — resolved graph != committed packages.lock.json. If intentional: dotnet restore FS.GG.Net.slnx --force-evaluate  and commit the lockfiles."
+            exit 1
+          fi
+      - name: Build (Debug, --no-restore)
+        run: dotnet build FS.GG.Net.slnx -c Debug --no-restore
+      - name: Test (--no-restore)
+        run: dotnet test FS.GG.Net.slnx -c Debug --no-restore
+
+  publish:
+    name: Publish packages (org feed + nuget.org)
+    runs-on: ubuntu-latest
+    if: github.repository == 'FS-GG/FS.GG.Net'
+    needs: [verify]
+    permissions:
+      contents: write     # create/upload GitHub Release assets
+      packages: write     # push to the org GitHub Packages feed
+      id-token: write     # ADR-0013: mint the GitHub OIDC token for nuget.org Trusted Publishing
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Resolve version from the release tag
+        id: ver
+        shell: bash
+        run: |
+          set -euo pipefail
+          case "${{ github.event_name }}" in
+            release)           raw="${{ github.event.release.tag_name }}" ;;
+            push)              raw="${GITHUB_REF_NAME}" ;;
+            workflow_dispatch) raw="${{ inputs.version }}" ;;
+            *)                 raw="" ;;
+          esac
+          ver="${raw#v}"   # v0.1.0 -> 0.1.0
+          if [[ -z "$ver" ]]; then
+            echo "::notice::No version (manual run without input) — pack-only dry run, no push."
+            echo "push=false" >> "$GITHUB_OUTPUT"
+            ver="0.0.0-dryrun.${GITHUB_RUN_ID}"
+          else
+            echo "push=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$ver" >> "$GITHUB_OUTPUT"
+          echo "tag=${raw}" >> "$GITHUB_OUTPUT"
+          echo "Release version: $ver"
+
+      # The tag is the trigger; <FsGgNetVersion> in Directory.Packages.props is the version the
+      # packages actually carry. They MUST agree, else the tag advertises bytes it doesn't match.
+      - name: Guard — tag version == repo version-of-truth
+        if: steps.ver.outputs.push == 'true'
+        shell: bash
+        env:
+          VER: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          truth="$(grep -oP '(?<=<FsGgNetVersion>)[^<]+' Directory.Packages.props)"
+          [[ -n "$truth" ]] || { echo "::error::<FsGgNetVersion> not found in Directory.Packages.props"; exit 1; }
+          if [[ "$truth" != "$VER" ]]; then
+            echo "::error::tag version ($VER) != Directory.Packages.props <FsGgNetVersion> ($truth). Bump the version-of-truth to match the tag in the release PR."
+            exit 1
+          fi
+          echo "Version-of-truth matches the tag: $VER"
+
+      - name: Pack the coherent set (@ $VER)
+        shell: bash
+        env:
+          VER: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          # --locked-mode, as `verify` uses. Different job on a different runner, so its restore is
+          # its own: without the flag the graph that gets packed and pushed is not the graph `verify`
+          # validated.
+          if ! dotnet restore FS.GG.Net.slnx --locked-mode; then
+            echo "::error::locked restore failed in the PUBLISH job — the graph about to be packed does not match the committed packages.lock.json. Refusing to publish a set nobody verified."
+            exit 1
+          fi
+          dotnet pack FS.GG.Net.slnx -c Release -p:Version="$VER" -o artifacts/packages
+          echo "Packed:"; ls -1 artifacts/packages/*.nupkg
+
+      - name: Push coherent set to nuget.pkg.github.com/FS-GG
+        if: steps.ver.outputs.push == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet nuget push "artifacts/packages/*.nupkg" \
+            --source https://nuget.pkg.github.com/FS-GG/index.json \
+            --api-key "${{ secrets.GITHUB_TOKEN }}" \
+            --skip-duplicate
+          echo "Published FS.GG.Net.* ${{ steps.ver.outputs.version }} to the org feed."
+
+      # Dual-publish to nuget.org via Trusted Publishing / OIDC (ADR-0012/0013 — no stored key). The
+      # org Trusted Publishing policy `fs-gg-net-publishing` (Paradigma11 / FS-GG/FS.GG.Net /
+      # release.yml) matches this exchange; `user` is the public nuget.org owner (not a secret),
+      # secret-overridable like the sibling repos. Fails loud if the policy is ever removed.
+      - name: NuGet login (OIDC → short-lived nuget.org key)
+        if: steps.ver.outputs.push == 'true'
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER || 'Paradigma11' }}
+      - name: Push coherent set to nuget.org (public)
+        if: steps.ver.outputs.push == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet nuget push "artifacts/packages/*.nupkg" \
+            --source https://api.nuget.org/v3/index.json \
+            --api-key "${{ steps.nuget-login.outputs.NUGET_API_KEY }}" \
+            --skip-duplicate
+          echo "Published FS.GG.Net.* ${{ steps.ver.outputs.version }} to nuget.org."
+
+      - name: Attach packages to the GitHub Release
+        if: steps.ver.outputs.push == 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "$TAG" --notes "FS.GG.Net $TAG — coherent set on the org feed + nuget.org."
+          gh release upload "$TAG" artifacts/packages/*.nupkg --clobber
+          echo "Attached packages to release $TAG."

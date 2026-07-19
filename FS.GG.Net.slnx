@@ -1,4 +1,9 @@
 <Solution>
+  <Folder Name="/samples/" />
+  <Folder Name="/samples/Sc2Handshake/">
+    <Project Path="samples/Sc2Handshake/Sc2.Protocol/Sc2.Protocol.csproj" />
+    <Project Path="samples/Sc2Handshake/Sc2Handshake/Sc2Handshake.fsproj" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/FS.GG.Net.Core/FS.GG.Net.Core.fsproj" />
     <Project Path="src/FS.GG.Net.Elmish/FS.GG.Net.Elmish.fsproj" />

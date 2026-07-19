@@ -14,6 +14,8 @@
          (ToByteArray / MessageParser) that SC2-over-WebSocket needs (ADR-0052 §4). protobuf-net +
          protobuf-net-fsharp are the code-first path for owned schemas (absorbed from fsGRPCSkills). -->
     <PackageVersion Include="Google.Protobuf" Version="3.29.3" />
+    <!-- Grpc.Tools: build-only protobuf codegen, used by the samples/Sc2Handshake vendored-.proto lib. -->
+    <PackageVersion Include="Grpc.Tools" Version="2.69.0" />
     <PackageVersion Include="protobuf-net" Version="3.2.45" />
     <PackageVersion Include="protobuf-net-fsharp" Version="0.1.0" />
 

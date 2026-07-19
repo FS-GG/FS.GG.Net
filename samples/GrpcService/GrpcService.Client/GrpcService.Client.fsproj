@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GrpcService.Contracts\GrpcService.Contracts.fsproj" />
+    <ProjectReference Include="..\..\..\src\FS.GG.Net.Grpc\FS.GG.Net.Grpc.fsproj" />
+    <ProjectReference Include="..\..\..\src\FS.GG.Net.Protobuf\FS.GG.Net.Protobuf.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="protobuf-net.Grpc" />
+    <PackageReference Include="Grpc.Net.Client" />
+  </ItemGroup>
+
+</Project>

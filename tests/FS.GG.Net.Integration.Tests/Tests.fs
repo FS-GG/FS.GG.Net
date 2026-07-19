@@ -8,6 +8,9 @@ open System.Threading.Tasks
 open Expecto
 open Google.Protobuf.WellKnownTypes
 open ProtoBuf
+open ProtoBuf.Grpc
+open ProtoBuf.Grpc.Client
+open GrpcService.Contracts
 open FS.GG.Net.Core
 open FS.GG.Net.Protobuf
 open FS.GG.Net.WebSocket
@@ -168,4 +171,40 @@ let tests =
               match got with
               | Msg.Got sv -> Expect.equal sv.Value "pong" "Cmd dispatched the response"
               | Msg.Failed e -> failtestf "unexpected error: %O" e
+          }
+
+          testCaseAsync "gRPC code-first: unary + server-streaming round-trip via FS.GG.Net.Grpc"
+          <| async {
+              // Plaintext HTTP/2 (h2c) for the no-TLS in-process server.
+              AppContext.SetSwitch("System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport", true)
+
+              let! server = GrpcService.Server.Host.start () |> Async.AwaitTask
+              // The client half is pure FS.GG.Net: Registration (Protobuf) + the channel (Grpc).
+              Registration.records Contract.recordTypes
+              let channel = GrpcTransport.connect (Uri server.Address)
+              let greeter = channel.CreateGrpcService<IGreeter>()
+
+              let! reply =
+                  greeter.SayHello({ Name = "World" }, CallContext.Default).AsTask()
+                  |> Async.AwaitTask
+
+              Expect.equal reply.Message "Hello, World!" "unary call round-trips (code-first F# records)"
+
+              // server-streaming
+              let ticks = ResizeArray<int>()
+              let e = greeter.CountTo({ To = 3 }, CallContext.Default).GetAsyncEnumerator(CancellationToken.None)
+              let mutable go = true
+
+              while go do
+                  let! moved = e.MoveNextAsync().AsTask() |> Async.AwaitTask
+
+                  if moved then ticks.Add e.Current.N else go <- false
+
+              Expect.sequenceEqual (List.ofSeq ticks) [ 1; 2; 3 ] "server-streaming yields 1..3"
+
+              match GrpcTransport.stateOf channel with
+              | Faulted _ -> failtest "channel faulted after successful calls"
+              | _ -> ()
+
+              do! server.Stop () |> Async.AwaitTask
           } ]

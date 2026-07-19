@@ -25,8 +25,12 @@
     <ProjectReference Include="..\..\src\FS.GG.Net.Protobuf\FS.GG.Net.Protobuf.fsproj" />
     <ProjectReference Include="..\..\src\FS.GG.Net.Grpc\FS.GG.Net.Grpc.fsproj" />
     <ProjectReference Include="..\..\src\FS.GG.Net.Elmish\FS.GG.Net.Elmish.fsproj" />
+    <!-- The gRPC service sample, hosted in-process to verify the code-first server+client path. -->
+    <ProjectReference Include="..\..\samples\GrpcService\GrpcService.Contracts\GrpcService.Contracts.fsproj" />
+    <ProjectReference Include="..\..\samples\GrpcService\GrpcService.Server\GrpcService.Server.fsproj" />
     <PackageReference Include="FSharp.Core" />
     <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="protobuf-net.Grpc" />
     <PackageReference Include="protobuf-net" />
     <PackageReference Include="protobuf-net-fsharp" />
     <PackageReference Include="Elmish" />

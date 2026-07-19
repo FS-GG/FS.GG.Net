@@ -59,14 +59,6 @@
           "Microsoft.NETCore.Platforms": "2.1.0"
         }
       },
-      "System.ServiceModel.Primitives": {
-        "type": "Transitive",
-        "resolved": "4.5.3",
-        "contentHash": "Wc9Hgg4Cmqi416zvEgq2sW1YYCGuhwWzspDclJWlFZqY6EGhFUPZU+kVpl5z9kAgrSOQP7/Uiik+PtSQtmq+5A==",
-        "dependencies": {
-          "System.Private.ServiceModel": "4.5.3"
-        }
-      },
       "fs.gg.net.core": {
         "type": "Project",
         "dependencies": {
@@ -80,6 +72,15 @@
         "contentHash": "O+vbVVDxTWlFRBe5OsAmMKqqD7WQ7TPIH97Nr/Pk8gDxtNW77seiDmXfxnODuWIkm0fYW7kE5ILq8jHsgH79yg==",
         "dependencies": {
           "System.ServiceModel.Primitives": "4.5.3"
+        }
+      },
+      "System.ServiceModel.Primitives": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.0, )",
+        "resolved": "4.5.3",
+        "contentHash": "Wc9Hgg4Cmqi416zvEgq2sW1YYCGuhwWzspDclJWlFZqY6EGhFUPZU+kVpl5z9kAgrSOQP7/Uiik+PtSQtmq+5A==",
+        "dependencies": {
+          "System.Private.ServiceModel": "4.5.3"
         }
       }
     }

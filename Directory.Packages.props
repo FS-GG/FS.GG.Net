@@ -23,6 +23,11 @@
          and protobuf-net.Grpc already do method dispatch well; we do not re-abstract it. -->
     <PackageVersion Include="Grpc.Net.Client" Version="2.67.0" />
     <PackageVersion Include="protobuf-net.Grpc" Version="1.1.1" />
+    <!-- Server hosting for the samples/GrpcService code-first service. -->
+    <PackageVersion Include="protobuf-net.Grpc.AspNetCore" Version="1.1.1" />
+    <PackageVersion Include="System.ServiceModel.Primitives" Version="8.1.0" />
+    <!-- Overrides the vulnerable 8.0.2 that System.ServiceModel.Primitives pulls transitively (NU1903). -->
+    <PackageVersion Include="System.Security.Cryptography.Xml" Version="10.0.10" />
 
     <!-- Elmish Cmd/Sub authoring surface: FS.GG.Net.Elmish. The standard Elmish library (never
          FS.GG.UI — the transport component stays render-independent, like FS.GG.Audio.Elmish). -->

@@ -8,9 +8,16 @@ open FS.GG.Net.Core
 
 [<RequireQualifiedAccess>]
 module Registration =
+    // Register each type at most once per process. Re-registering a type whose serializer is already
+    // generated throws ("cannot be changed once a serializer has been generated"); protobuf-net's own
+    // IsDefined is the wrong guard (it is true for types it could auto-handle, so it would skip the
+    // essential F# record registration). Track what WE have registered instead.
+    let private registered = System.Collections.Concurrent.ConcurrentDictionary<Type, bool>()
+
     let record (recordType: Type) : unit =
-        Serialiser.registerRecordRuntimeTypeIntoModel recordType Serialiser.defaultModel
-        |> ignore
+        if registered.TryAdd(recordType, true) then
+            Serialiser.registerRecordRuntimeTypeIntoModel recordType Serialiser.defaultModel
+            |> ignore
 
     let records (recordTypes: Type list) : unit = recordTypes |> List.iter record
 
@@ -26,7 +33,7 @@ module Codec =
 
     let protobufNet<'T> () : IMessageCodec<'T> =
         let model = Serialiser.defaultModel
-        Serialiser.registerRecordRuntimeTypeIntoModel typeof<'T> model |> ignore
+        Registration.record typeof<'T>
 
         { new IMessageCodec<'T> with
             member _.Encode(value: 'T) : ReadOnlyMemory<byte> =

@@ -59,6 +59,16 @@
           "protobuf-net": "0.0.0"
         }
       },
+      "protobuf-net.Grpc": {
+        "type": "Direct",
+        "requested": "[1.1.1, )",
+        "resolved": "1.1.1",
+        "contentHash": "uThFb/iUplzuXEa/cztJaNGpKLRQRb515STtQX99IS1MKh8Qsunw6MjjU+9rjo8s9UymR6lN9Ab6xT3adBlyDg==",
+        "dependencies": {
+          "Grpc.Core.Api": "2.51.0",
+          "protobuf-net": "2.4.8"
+        }
+      },
       "YoloDev.Expecto.TestSdk": {
         "type": "Direct",
         "requested": "[0.16.0, )",
@@ -69,6 +79,14 @@
           "FSharp.Core": "7.0.200",
           "Microsoft.Testing.Extensions.VSTestBridge": "2.3.0",
           "Microsoft.Testing.Platform.MSBuild": "2.3.0"
+        }
+      },
+      "Grpc.AspNetCore.Server": {
+        "type": "Transitive",
+        "resolved": "2.51.0",
+        "contentHash": "D/4ZZSNtH0aNvoenCwGxT0KXOQvF1wcET59UZlnL0caKuxSQtNtc8ucIBHPzcSqQwZU7jGM6YO69P3fJjNrFaA==",
+        "dependencies": {
+          "Grpc.Net.Common": "2.51.0"
         }
       },
       "Grpc.Core.Api": {
@@ -198,6 +216,24 @@
           "FSharp.Core": "[10.1.301, )"
         }
       },
+      "grpcservice.contracts": {
+        "type": "Project",
+        "dependencies": {
+          "FSharp.Core": "[10.1.301, )",
+          "System.ServiceModel.Primitives": "[8.1.0, )",
+          "protobuf-net": "[3.2.45, )",
+          "protobuf-net.Grpc": "[1.1.1, )"
+        }
+      },
+      "grpcservice.server": {
+        "type": "Project",
+        "dependencies": {
+          "FS.GG.Net.Protobuf": "[0.1.0, )",
+          "FSharp.Core": "[10.1.301, )",
+          "GrpcService.Contracts": "[1.0.0, )",
+          "protobuf-net.Grpc.AspNetCore": "[1.1.1, )"
+        }
+      },
       "Grpc.Net.Client": {
         "type": "CentralTransitive",
         "requested": "[2.67.0, )",
@@ -207,15 +243,21 @@
           "Grpc.Net.Common": "2.67.0"
         }
       },
-      "protobuf-net.Grpc": {
+      "protobuf-net.Grpc.AspNetCore": {
         "type": "CentralTransitive",
         "requested": "[1.1.1, )",
         "resolved": "1.1.1",
-        "contentHash": "uThFb/iUplzuXEa/cztJaNGpKLRQRb515STtQX99IS1MKh8Qsunw6MjjU+9rjo8s9UymR6lN9Ab6xT3adBlyDg==",
+        "contentHash": "swwy9K9KlwlkXTYpTE9Hva9Qty9PFM081nr3bz7SVnmlNBvYcJFFMVkFuSHYOuVAtR7wvANtDsRj0+bc7zehXQ==",
         "dependencies": {
-          "Grpc.Core.Api": "2.51.0",
-          "protobuf-net": "2.4.8"
+          "Grpc.AspNetCore.Server": "2.51.0",
+          "protobuf-net.Grpc": "1.1.1"
         }
+      },
+      "System.ServiceModel.Primitives": {
+        "type": "CentralTransitive",
+        "requested": "[8.1.0, )",
+        "resolved": "8.1.0",
+        "contentHash": "/NGnzQSp2lmTlCfKzcD2PVKRnx6bQCbEqlb5sXo31TA2C7oA8g5I7Wfjk8dNRNUo1uSqZUcj3htED6tWA/mX9w=="
       }
     }
   }

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackageId>FS.GG.Net.Core</PackageId>
+    <Version>$(FsGgNetVersion)</Version>
+    <Authors>FS-GG</Authors>
+    <Description>Pure, BCL-only transport vocabulary for the FS.GG.Net component — the two-tier seam (ITransport byte-message duplex, IMessageChannel typed protobuf request/response), the ConnectionState lifecycle, and a pluggable Correlation strategy (Sequential id-verified for StarCraft II; Multiplexed for pipelined protocols). Knows no .proto and no game types. ADR-0052.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Core.fsi" />
+    <Compile Include="Core.fs" />
+  </ItemGroup>
+
+  <!-- Bottom layer: FSharp.Core is the ONLY dependency, pinned via CPM to the org common 10.1.301. -->
+  <ItemGroup>
+    <PackageReference Include="FSharp.Core" />
+  </ItemGroup>
+
+</Project>

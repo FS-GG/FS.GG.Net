@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackageId>FS.GG.Net.Elmish</PackageId>
+    <Version>$(FsGgNetVersion)</Version>
+    <Authors>FS-GG</Authors>
+    <Description>Elmish Cmd/Sub authoring surface over an FS.GG.Net IMessageChannel — Net.Cmd.exchange turns a request into a command that dispatches the correlated response (or failure), and Net.Sub.incoming subscribes to unsolicited server messages. One idiom for both channel kinds. Depends on the standard Elmish library, never on FS.GG.UI (the transport component stays render-independent). ADR-0052.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Elmish.fsi" />
+    <Compile Include="Elmish.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FS.GG.Net.Core\FS.GG.Net.Core.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Elmish" />
+  </ItemGroup>
+
+</Project>

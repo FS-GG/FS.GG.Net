@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackageId>FS.GG.Net.Protobuf</PackageId>
+    <Version>$(FsGgNetVersion)</Version>
+    <Authors>FS-GG</Authors>
+    <Description>IMessageCodec implementations for the FS.GG.Net component: Google.Protobuf (contract-first, the reproducible ToByteArray/MessageParser raw path SC2-over-WebSocket needs) and protobuf-net (code-first, for owned schemas). Turns the hard-won F#/protobuf-net gotchas from fsGRPCSkills — per-record registration, array-not-list, Dictionary-not-Map — into API. ADR-0052.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="Protobuf.fsi" />
+    <Compile Include="Protobuf.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FS.GG.Net.Core\FS.GG.Net.Core.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+    <PackageReference Include="Google.Protobuf" />
+    <PackageReference Include="protobuf-net" />
+    <PackageReference Include="protobuf-net-fsharp" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/FS.GG.Net.Core/FS.GG.Net.Core.fsproj" />
+    <Project Path="src/FS.GG.Net.Elmish/FS.GG.Net.Elmish.fsproj" />
+    <Project Path="src/FS.GG.Net.Grpc/FS.GG.Net.Grpc.fsproj" />
+    <Project Path="src/FS.GG.Net.Protobuf/FS.GG.Net.Protobuf.fsproj" />
+    <Project Path="src/FS.GG.Net.WebSocket/FS.GG.Net.WebSocket.fsproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FS.GG.Net.Core.Tests/FS.GG.Net.Core.Tests.fsproj" />
+  </Folder>
+</Solution>

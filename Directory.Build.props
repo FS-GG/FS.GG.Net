@@ -1,0 +1,44 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <!-- FS-GG house style: signatures are the contract, builds are reproducible. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <!-- Locked restore is asserted explicitly where wanted (gate.yml / release.yml), not via a dead
+         $(ContinuousIntegrationBuild) condition — see the FS.GG.Audio write-up. -->
+  </PropertyGroup>
+
+  <!-- ONE AUTHORITATIVE FEED, ON EVERY MACHINE (#31, mirrored from FS.GG.Audio). The SDK's bundled
+       FSharp.Core is a different build with a different lock hash; DisableImplicitLibraryPacksFolder
+       stops it being appended, and nuget.config's packageSourceMapping refuses it structurally. -->
+  <PropertyGroup>
+    <DisableImplicitLibraryPacksFolder>true</DisableImplicitLibraryPacksFolder>
+  </PropertyGroup>
+
+  <!-- Package metadata for the publishable FS.GG.Net.* set (org house style). -->
+  <PropertyGroup Label="Package">
+    <Authors>FS.GG Contributors</Authors>
+    <Company>FS.GG Contributors</Company>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://github.com/FS-GG/FS.GG.Net</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/FS-GG/FS.GG.Net.git</RepositoryUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+    <PackageTags>fs-gg;networking;transport;grpc;protobuf;websocket;fsharp</PackageTags>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+  </PropertyGroup>
+
+  <!-- Pack each project's own .fsi into its nupkg under api-surface/ (org convention, mirrors
+       FS.GG.Audio / FS.GG.Rendering): an inert folder carried in the package, never fed to a
+       consumer's compiler, that lets Rendering GENERATE its scaffold API mirror from the pinned
+       package rather than hand-copying it. -->
+  <ItemGroup Label="api-surface" Condition="'$(IsPackable)' != 'false' And '$(PackageId)' != ''">
+    <None Include="$(MSBuildProjectDirectory)/**/*.fsi"
+          Exclude="$(MSBuildProjectDirectory)/bin/**;$(MSBuildProjectDirectory)/obj/**"
+          Pack="true"
+          PackagePath="api-surface/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

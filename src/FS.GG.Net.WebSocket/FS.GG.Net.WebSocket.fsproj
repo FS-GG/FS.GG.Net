@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <IsPackable>true</IsPackable>
+    <PackageId>FS.GG.Net.WebSocket</PackageId>
+    <Version>$(FsGgNetVersion)</Version>
+    <Authors>FS-GG</Authors>
+    <Description>Client-only ITransport over System.Net.WebSockets.ClientWebSocket for the FS.GG.Net component — the StarCraft II substrate. Reassembles protocol-level continuation frames into complete application messages, pools receive buffers, and retries the initial connect (the SC2 game boots its process, then listens on ws://127.0.0.1:PORT/sc2api). No server host in v1 (both first uses are clients). ADR-0052.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="WebSocket.fsi" />
+    <Compile Include="WebSocket.fs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FS.GG.Net.Core\FS.GG.Net.Core.fsproj" />
+    <PackageReference Include="FSharp.Core" />
+  </ItemGroup>
+
+</Project>

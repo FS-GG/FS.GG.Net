@@ -1,0 +1,35 @@
+<Project>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <!-- The FS.GG.Net.* packages release on their OWN version axis (bottom-layer sibling; mirrors
+         $(FsGgAudioVersion) / $(FsGgGameVersion)). ADR-0052. -->
+    <FsGgNetVersion>0.1.0</FsGgNetVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).
+         FS.GG.Net.Core depends on FSharp.Core ALONE. -->
+    <PackageVersion Include="FSharp.Core" Version="10.1.301" />
+
+    <!-- Serialization: FS.GG.Net.Protobuf. Google.Protobuf is the reproducible raw-bytes path
+         (ToByteArray / MessageParser) that SC2-over-WebSocket needs (ADR-0052 §4). protobuf-net +
+         protobuf-net-fsharp are the code-first path for owned schemas (absorbed from fsGRPCSkills). -->
+    <PackageVersion Include="Google.Protobuf" Version="3.29.3" />
+    <PackageVersion Include="protobuf-net" Version="3.2.45" />
+    <PackageVersion Include="protobuf-net-fsharp" Version="0.1.0" />
+
+    <!-- gRPC transport: FS.GG.Net.Grpc (the BAR substrate). Thin lifecycle wrapper only — grpc-dotnet
+         and protobuf-net.Grpc already do method dispatch well; we do not re-abstract it. -->
+    <PackageVersion Include="Grpc.Net.Client" Version="2.67.0" />
+    <PackageVersion Include="protobuf-net.Grpc" Version="1.1.1" />
+
+    <!-- Elmish Cmd/Sub authoring surface: FS.GG.Net.Elmish. The standard Elmish library (never
+         FS.GG.UI — the transport component stays render-independent, like FS.GG.Audio.Elmish). -->
+    <PackageVersion Include="Elmish" Version="5.0.2" />
+
+    <!-- Test-only. Pinned to the same versions the sibling FS-GG repos' ported suites use. -->
+    <PackageVersion Include="Expecto" Version="11.1.0" />
+    <PackageVersion Include="FsCheck" Version="3.3.3" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.8.1" />
+    <PackageVersion Include="YoloDev.Expecto.TestSdk" Version="0.16.0" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,42 @@
+name: gate
+
+# PR + push build/test gate for FS.GG.Net. Locked/deterministic restore, warnings-as-errors build
+# (set in Directory.Build.props), and the Expecto suite. This is the check that guards the coherent
+# set BEFORE a release tag is ever cut.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test:
+    name: Build + test (locked restore)
+    runs-on: ubuntu-latest
+    if: github.repository == 'FS-GG/FS.GG.Net'
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore (locked)
+        run: |
+          set -euo pipefail
+          if ! dotnet restore FS.GG.Net.slnx --locked-mode; then
+            echo "::error::locked restore failed — resolved graph != committed packages.lock.json. Run: dotnet restore FS.GG.Net.slnx --force-evaluate  and commit the lockfiles."
+            exit 1
+          fi
+      - name: Build (Debug, warnings-as-errors, --no-restore)
+        run: dotnet build FS.GG.Net.slnx -c Debug --no-restore
+      - name: Test (--no-restore)
+        run: dotnet test FS.GG.Net.slnx -c Debug --no-restore

@@ -1,0 +1,53 @@
+# Renovate lockfile-sync — thin caller for the shared reusable workflow (FS-GG/.github#145).
+#
+# Regenerates the committed packages.lock.json on renovate/* PRs so the locked-restore gate
+# (gate.yml — `dotnet restore --locked-mode`, ADR-0006) goes green without a human running
+# `dotnet restore --force-evaluate` by hand. Renovate edits the central <PackageVersion> without
+# running restore, so a referenced-package bump would otherwise fail the gate with NU1004.
+#
+# SCOPE, HONESTLY. The reusable workflow's job is gated
+# `startsWith(github.event.pull_request.head.ref, 'renovate/')`, so this heals RENOVATE-driven drift
+# only. It does NOT regenerate lock files on an ordinary PR. Net commits per-project
+# packages.lock.json today and its gate restores `--locked-mode`; this is the fire brigade that keeps
+# them in step once Renovate starts bumping pins. Renovate is not onboarded on this repo yet (the
+# `renovate/configure` onboarding PR is still open), so like FS.GG.Audio / FS.GG.Templates this is
+# adopted DEFENSIVELY: inert today, correct the moment Renovate goes live.
+#
+# `packages: read` IS NOT OPTIONAL, even though Net consumes no token-gated org-feed package. The
+# reusable workflow declares `permissions: {contents: read, packages: read}`, and a called workflow
+# cannot request a permission the caller did not grant — the run then dies at startup, before the
+# job-level `if` is ever evaluated. FS.GG.Game omitted it and its lockfile-sync startup_failure'd on
+# EVERY run (FS.GG.Game#137). This grants the ceiling so that cannot happen here.
+#
+# ORG-ADMIN PREREQUISITES — both fail loudly, neither is satisfiable from this repo:
+#   1. The fs-gg-cross-repo-dispatch App must include FS.GG.Net with `contents: write`, or the
+#      push 403s.
+#   2. The org secrets FSGG_DISPATCH_APP_ID / _PRIVATE_KEY must be visible to FS.GG.Net, or
+#      `secrets.app-id` resolves empty and the token step fails.
+# Net has never used this App, so assume NEITHER is in place until an org admin confirms (tracked as a
+# follow-up on .github#1291). They only bite once a renovate/* PR exists, which is why this can land
+# ahead of them.
+#
+# All mechanics + rationale (App-token push that re-triggers the gate, renovate/*-same-repo gating,
+# the cold regeneration that avoids committing a hash no fresh clone can restore, self-limiting
+# second pass) live in the reusable workflow:
+#   FS-GG/.github .github/workflows/lockfile-sync.yml
+name: lockfile-sync
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read   # the App token inside the reusable workflow performs the git write
+  packages: read   # required ceiling for the reusable workflow's declared packages:read — omitting
+                   # it fails the whole workflow at startup (startup_failure). See above.
+
+jobs:
+  sync:
+    uses: FS-GG/.github/.github/workflows/lockfile-sync.yml@main
+    with:
+      restore-target: FS.GG.Net.slnx
+    secrets:
+      app-id:          ${{ secrets.FSGG_DISPATCH_APP_ID }}
+      app-private-key: ${{ secrets.FSGG_DISPATCH_APP_PRIVATE_KEY }}

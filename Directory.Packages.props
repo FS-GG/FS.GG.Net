@@ -3,7 +3,7 @@
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <!-- The FS.GG.Net.* packages release on their OWN version axis (bottom-layer sibling; mirrors
          $(FsGgAudioVersion) / $(FsGgGameVersion)). ADR-0052. -->
-    <FsGgNetVersion>0.1.0</FsGgNetVersion>
+    <FsGgNetVersion>0.2.0</FsGgNetVersion>
   </PropertyGroup>
   <ItemGroup>
     <!-- The coordination kit as a versioned package (ADR-0062, .github#1262 / .github#1291).

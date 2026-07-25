@@ -12,20 +12,42 @@ open FS.GG.Net.Core
 type WebSocketOptions =
     { ConnectRetries: int
       ConnectBackoff: TimeSpan
-      ReceiveBufferSize: int }
+      ReceiveBufferSize: int
+      InboundCapacity: int
+      MaxMessageSize: int }
 
 [<RequireQualifiedAccess>]
 module WebSocketOptions =
     let defaults =
         { ConnectRetries = 40
           ConnectBackoff = TimeSpan.FromMilliseconds 250.0
-          ReceiveBufferSize = 64 * 1024 }
+          ReceiveBufferSize = 64 * 1024
+          InboundCapacity = 16
+          MaxMessageSize = 64 * 1024 * 1024 }
 
 /// A WebSocket ITransport over any open socket (client-connected or server-accepted). A background
 /// loop reassembles continuation frames into complete application messages and publishes them on an
-/// unbounded channel; the read buffer is pooled.
+/// bounded channel; when consumers fall behind, awaiting the channel write applies backpressure to
+/// socket reads. The read buffer is pooled and assembled messages cannot exceed MaxMessageSize.
 type private SocketTransport(ws: WebSocket, options: WebSocketOptions) =
-    let inbound = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
+    do
+        if options.ReceiveBufferSize <= 0 then
+            invalidArg (nameof options.ReceiveBufferSize) "ReceiveBufferSize must be positive."
+
+        if options.InboundCapacity <= 0 then
+            invalidArg (nameof options.InboundCapacity) "InboundCapacity must be positive."
+
+        if options.MaxMessageSize <= 0 then
+            invalidArg (nameof options.MaxMessageSize) "MaxMessageSize must be positive."
+
+    let channelOptions = BoundedChannelOptions(options.InboundCapacity)
+
+    do
+        channelOptions.FullMode <- BoundedChannelFullMode.Wait
+        channelOptions.SingleWriter <- true
+        channelOptions.SingleReader <- false
+
+    let inbound = Channel.CreateBounded<ReadOnlyMemory<byte>>(channelOptions)
     let loopCts = new CancellationTokenSource()
     let mutable state = Connected
 
@@ -46,12 +68,31 @@ type private SocketTransport(ws: WebSocket, options: WebSocketOptions) =
                             go <- false
                             state <- Closing
                         | _ ->
-                            acc.Write(buffer, 0, result.Count)
+                            let assembledSize = acc.Length + int64 result.Count
 
-                            if result.EndOfMessage then
-                                let msg = acc.ToArray()
+                            if assembledSize > int64 options.MaxMessageSize then
+                                go <- false
+                                state <- Closing
                                 acc.SetLength 0L
-                                inbound.Writer.TryWrite(ReadOnlyMemory<byte> msg) |> ignore
+
+                                if ws.State = WebSocketState.Open || ws.State = WebSocketState.CloseReceived then
+                                    do!
+                                        ws.CloseOutputAsync(
+                                            WebSocketCloseStatus.MessageTooBig,
+                                            $"message exceeds configured maximum of {options.MaxMessageSize} bytes",
+                                            CancellationToken.None
+                                        )
+                            else
+                                acc.Write(buffer, 0, result.Count)
+
+                                if result.EndOfMessage then
+                                    let msg = acc.ToArray()
+                                    acc.SetLength 0L
+
+                                    // FullMode.Wait plus an awaited write is the backpressure boundary:
+                                    // the socket is not read again until the consumer frees channel space.
+                                    do!
+                                        inbound.Writer.WriteAsync(ReadOnlyMemory<byte> msg, loopCts.Token).AsTask()
 
                     inbound.Writer.TryComplete() |> ignore
                 with

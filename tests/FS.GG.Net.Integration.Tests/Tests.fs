@@ -2,6 +2,7 @@ module FS.GG.Net.IntegrationTests.Tests
 
 open System
 open System.Collections.Generic
+open System.Net.WebSockets
 open System.Threading
 open System.Threading.Channels
 open System.Threading.Tasks
@@ -88,6 +89,75 @@ let tests =
               do! transport.Send(ReadOnlyMemory big, CancellationToken.None).AsTask() |> Async.AwaitTask
               let! got = firstOf transport.Receive |> Async.AwaitTask
               Expect.equal (got.ToArray()) big "large payload reassembled intact across frames"
+              do! transport.DisposeAsync().AsTask() |> Async.AwaitTask
+              do! server.Stop () |> Async.AwaitTask
+          }
+
+          testCaseAsync "WebSocket rejects an oversized assembled message with status 1009"
+          <| async {
+              let maxMessageSize = 8 * 1024
+              let payload = Array.zeroCreate<byte> (maxMessageSize + 1)
+              let! server = EchoServer.startPushing payload |> Async.AwaitTask
+
+              let opts =
+                  { WebSocketOptions.defaults with
+                      ReceiveBufferSize = 1024
+                      MaxMessageSize = maxMessageSize }
+
+              let! transport =
+                  WebSocketTransport.connectAsync server.Uri opts CancellationToken.None
+                  |> Async.AwaitTask
+
+              let e = transport.Receive.GetAsyncEnumerator(CancellationToken.None)
+              let! moved = e.MoveNextAsync().AsTask() |> Async.AwaitTask
+              Expect.isFalse moved "an oversized message is never published, even partially"
+
+              let! closeStatus =
+                  server.PeerCloseStatus.WaitAsync(TimeSpan.FromSeconds 5.0)
+                  |> Async.AwaitTask
+
+              Expect.equal
+                  closeStatus
+                  (Some WebSocketCloseStatus.MessageTooBig)
+                  "the peer observes RFC 6455 status 1009"
+
+              do! e.DisposeAsync().AsTask() |> Async.AwaitTask
+              do! transport.DisposeAsync().AsTask() |> Async.AwaitTask
+              do! server.Stop () |> Async.AwaitTask
+          }
+
+          testCaseAsync "WebSocket bounded inbound queue preserves messages under backpressure"
+          <| async {
+              let! server = EchoServer.start () |> Async.AwaitTask
+              let opts = { WebSocketOptions.defaults with InboundCapacity = 1 }
+
+              let! transport =
+                  WebSocketTransport.connectAsync server.Uri opts CancellationToken.None
+                  |> Async.AwaitTask
+
+              let messages = [ "one"; "two"; "three" ]
+
+              for message in messages do
+                  do!
+                      transport.Send(
+                          ReadOnlyMemory(Text.Encoding.UTF8.GetBytes message),
+                          CancellationToken.None
+                      )
+                          .AsTask()
+                      |> Async.AwaitTask
+
+              // Let the receive loop fill its single slot and block before consuming.
+              do! Task.Delay 100 |> Async.AwaitTask
+              let e = transport.Receive.GetAsyncEnumerator(CancellationToken.None)
+              let received = ResizeArray<string>()
+
+              for _ in messages do
+                  let! moved = e.MoveNextAsync().AsTask() |> Async.AwaitTask
+                  Expect.isTrue moved "each echoed message remains available"
+                  received.Add(Text.Encoding.UTF8.GetString(e.Current.ToArray()))
+
+              Expect.sequenceEqual received messages "bounded backpressure does not drop messages"
+              do! e.DisposeAsync().AsTask() |> Async.AwaitTask
               do! transport.DisposeAsync().AsTask() |> Async.AwaitTask
               do! server.Stop () |> Async.AwaitTask
           }

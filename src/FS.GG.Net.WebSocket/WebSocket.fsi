@@ -15,14 +15,20 @@ type WebSocketOptions =
       /// Delay between initial connect attempts.
       ConnectBackoff: TimeSpan
       /// Size of each pooled receive buffer read; a message larger than this is reassembled across
-      /// reads (SC2 raw observations are multi-MB), so this is a read granularity, not a max size. }
-      ReceiveBufferSize: int }
+      /// reads (SC2 raw observations are multi-MB), so this is a read granularity, not a max size.
+      ReceiveBufferSize: int
+      /// Maximum number of complete inbound messages buffered for a slow consumer. When full, the
+      /// receive loop stops reading the socket until channel capacity becomes available.
+      InboundCapacity: int
+      /// Maximum bytes allowed in one reassembled inbound message. An excess closes the WebSocket
+      /// with status 1009 (Message Too Big) and publishes no partial message. }
+      MaxMessageSize: int }
 
 /// Public contract exposed by this FS.GG.Net.WebSocket package.
 [<RequireQualifiedAccess>]
 module WebSocketOptions =
     /// Defaults tuned for a local SC2 headless server: 40 retries x 250ms (~10s to come up),
-    /// 64 KiB read granularity.
+    /// 64 KiB read granularity, 16 buffered inbound messages, and a 64 MiB message limit.
     val defaults: WebSocketOptions
 
 /// Public contract exposed by this FS.GG.Net.WebSocket package.

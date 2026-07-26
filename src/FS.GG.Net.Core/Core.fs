@@ -32,6 +32,27 @@ type ServerEcho<'Req, 'Resp> =
     { ReadId: 'Req -> uint64
       StampId: 'Resp -> uint64 -> 'Resp }
 
+[<RequireQualifiedAccess>]
+type ServeFailureStage =
+    | HandlerExecution
+    | ResponseSend
+
+type ServeDiagnostic =
+    { Stage: ServeFailureStage
+      Error: exn }
+
+type ServeOptions =
+    { MaxConcurrentHandlers: int
+      CancellationToken: CancellationToken
+      OnDiagnostic: ServeDiagnostic -> unit }
+
+[<RequireQualifiedAccess>]
+module ServeOptions =
+    let defaults =
+        { MaxConcurrentHandlers = 64
+          CancellationToken = CancellationToken.None
+          OnDiagnostic = ignore }
+
 type Correlation<'Req, 'Resp> =
     | Sequential of idEcho: IdEcho<'Req, 'Resp> option
     | Multiplexed of idEcho: IdEcho<'Req, 'Resp>
@@ -338,6 +359,122 @@ module MessageChannel =
         | Sequential idEcho -> createSequential transport requestCodec responseCodec idEcho
         | Multiplexed idEcho -> createMultiplexed transport requestCodec responseCodec idEcho
 
+    let serveWithOptions
+        (transport: ITransport)
+        (requestCodec: IMessageCodec<'Req>)
+        (responseCodec: IMessageCodec<'Resp>)
+        (echo: ServerEcho<'Req, 'Resp> option)
+        (options: ServeOptions)
+        (handler: 'Req -> CancellationToken -> Task<'Resp>)
+        : Task =
+        if options.MaxConcurrentHandlers < 1 then
+            invalidArg (nameof options.MaxConcurrentHandlers) "the handler concurrency limit must be positive"
+
+        task {
+            use shutdown = new CancellationTokenSource()
+
+            use linked =
+                CancellationTokenSource.CreateLinkedTokenSource(options.CancellationToken, shutdown.Token)
+
+            use sendGate = new SemaphoreSlim(1, 1)
+            let ct = linked.Token
+
+            let report stage error =
+                try
+                    options.OnDiagnostic { Stage = stage; Error = error }
+                with _ ->
+                    // Diagnostics must not become a second connection failure.
+                    ()
+
+            let handleOne (request: 'Req) : Task =
+                task {
+                    try
+                        let! response = handler request ct
+
+                        try
+                            let response =
+                                match echo with
+                                | Some e -> e.StampId response (e.ReadId request)
+                                | None -> response
+
+                            do! sendGate.WaitAsync ct
+
+                            try
+                                do! transport.Send(responseCodec.Encode response, ct)
+                            finally
+                                sendGate.Release() |> ignore
+                        with
+                        | :? OperationCanceledException when ct.IsCancellationRequested -> ()
+                        | ex -> report ServeFailureStage.ResponseSend ex
+                    with
+                    | :? OperationCanceledException when ct.IsCancellationRequested -> ()
+                    | ex -> report ServeFailureStage.HandlerExecution ex
+                }
+
+            // Without correlation replies must retain request order, so that mode always has one worker.
+            let workerCount =
+                match echo with
+                | Some _ -> options.MaxConcurrentHandlers
+                | None -> 1
+
+            let queueOptions =
+                BoundedChannelOptions(
+                    workerCount,
+                    FullMode = BoundedChannelFullMode.Wait,
+                    SingleWriter = true,
+                    SingleReader = (workerCount = 1)
+                )
+
+            let requests = Channel.CreateBounded<'Req>(queueOptions)
+
+            let worker () : Task =
+                task {
+                    try
+                        use e = requests.Reader.ReadAllAsync(ct).GetAsyncEnumerator()
+                        let mutable go = true
+
+                        while go do
+                            let! moved = e.MoveNextAsync()
+
+                            if moved then
+                                do! handleOne e.Current
+                            else
+                                go <- false
+                    with :? OperationCanceledException when ct.IsCancellationRequested ->
+                        ()
+                }
+
+            let workers = Array.init workerCount (fun _ -> worker ())
+            let mutable receiveError: exn option = None
+
+            try
+                use e = transport.Receive.GetAsyncEnumerator(ct)
+                let mutable go = true
+
+                while go do
+                    let! moved = e.MoveNextAsync()
+
+                    if moved then
+                        let request = requestCodec.Decode e.Current
+                        do! requests.Writer.WriteAsync(request, ct)
+                    else
+                        go <- false
+            with
+            | :? OperationCanceledException when ct.IsCancellationRequested -> ()
+            | ex -> receiveError <- Some ex
+
+            requests.Writer.TryComplete() |> ignore
+
+            if receiveError.IsSome then
+                shutdown.Cancel()
+
+            do! Task.WhenAll workers
+
+            match receiveError with
+            | Some ex -> return raise ex
+            | None -> ()
+        }
+
     let serve
         (transport: ITransport)
         (requestCodec: IMessageCodec<'Req>)
@@ -345,51 +482,10 @@ module MessageChannel =
         (echo: ServerEcho<'Req, 'Resp> option)
         (handler: 'Req -> Task<'Resp>)
         : Task =
-        task {
-            // A WebSocket forbids concurrent sends, so serialise responses through a 1-permit gate.
-            use sendGate = new SemaphoreSlim(1, 1)
-
-            let handleOne (request: 'Req) : Task =
-                task {
-                    try
-                        let! response = handler request
-
-                        let response =
-                            match echo with
-                            | Some e -> e.StampId response (e.ReadId request)
-                            | None -> response
-
-                        do! sendGate.WaitAsync()
-
-                        try
-                            do! transport.Send(responseCodec.Encode response, CancellationToken.None)
-                        finally
-                            sendGate.Release() |> ignore
-                    with _ ->
-                        // A failed request must not drop the connection.
-                        ()
-                }
-
-            let inflight = ResizeArray<Task>()
-            use e = transport.Receive.GetAsyncEnumerator(CancellationToken.None)
-            let mutable go = true
-
-            while go do
-                let! moved = e.MoveNextAsync()
-
-                if not moved then
-                    go <- false
-                else
-                    let request = requestCodec.Decode e.Current
-
-                    match echo with
-                    | Some _ ->
-                        // Concurrent: id-echo lets replies go out in any order. Prune finished ones.
-                        inflight.Add(handleOne request)
-                        inflight.RemoveAll(fun t -> t.IsCompleted) |> ignore
-                    | None ->
-                        // No id to correlate on: handle one at a time and reply in arrival order.
-                        do! handleOne request
-
-            do! Task.WhenAll inflight
-        }
+        serveWithOptions
+            transport
+            requestCodec
+            responseCodec
+            echo
+            ServeOptions.defaults
+            (fun request _ -> handler request)

@@ -99,7 +99,7 @@ module MessageChannel =
         let receiveLoop () : Task =
             task {
                 try
-                    let e = transport.Receive.GetAsyncEnumerator(loopCts.Token)
+                    use e = transport.Receive.GetAsyncEnumerator(loopCts.Token)
                     let mutable go = true
                     while go do
                         let! moved = e.MoveNextAsync()
@@ -268,7 +268,7 @@ module MessageChannel =
         let receiveLoop () : Task =
             task {
                 try
-                    let e = transport.Receive.GetAsyncEnumerator(loopCts.Token)
+                    use e = transport.Receive.GetAsyncEnumerator(loopCts.Token)
                     let mutable go = true
 
                     while go do
@@ -319,8 +319,14 @@ module MessageChannel =
                 loopCts.Cancel()
                 incoming.Writer.TryComplete() |> ignore
                 faultAll (Exception "channel disposed")
-                loop |> ignore
-                transport.DisposeAsync() }
+
+                ValueTask(
+                    task {
+                        do! loop
+                        loopCts.Dispose()
+                        do! transport.DisposeAsync().AsTask()
+                    }
+                ) }
 
     let create
         (transport: ITransport)
@@ -341,7 +347,7 @@ module MessageChannel =
         : Task =
         task {
             // A WebSocket forbids concurrent sends, so serialise responses through a 1-permit gate.
-            let sendGate = new SemaphoreSlim(1, 1)
+            use sendGate = new SemaphoreSlim(1, 1)
 
             let handleOne (request: 'Req) : Task =
                 task {
@@ -365,7 +371,7 @@ module MessageChannel =
                 }
 
             let inflight = ResizeArray<Task>()
-            let e = transport.Receive.GetAsyncEnumerator(CancellationToken.None)
+            use e = transport.Receive.GetAsyncEnumerator(CancellationToken.None)
             let mutable go = true
 
             while go do
@@ -386,5 +392,4 @@ module MessageChannel =
                         do! handleOne request
 
             do! Task.WhenAll inflight
-            sendGate.Dispose()
         }

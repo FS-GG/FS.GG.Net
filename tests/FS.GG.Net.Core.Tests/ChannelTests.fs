@@ -35,6 +35,22 @@ let private unwrap (ex: exn) =
     | :? AggregateException as agg -> agg.Flatten().InnerException
     | _ -> ex
 
+type TrackingAsyncEnumerable<'T>(source: Collections.Generic.IAsyncEnumerable<'T>) =
+    let mutable disposeCount = 0
+    member _.DisposeCount = Volatile.Read(&disposeCount)
+
+    interface Collections.Generic.IAsyncEnumerable<'T> with
+        member _.GetAsyncEnumerator(ct: CancellationToken) =
+            let inner = source.GetAsyncEnumerator ct
+
+            { new Collections.Generic.IAsyncEnumerator<'T> with
+                member _.Current = inner.Current
+                member _.MoveNextAsync() = inner.MoveNextAsync()
+
+                member _.DisposeAsync() =
+                    Interlocked.Increment(&disposeCount) |> ignore
+                    inner.DisposeAsync() }
+
 /// A fake transport: `respondTo` models a server replying to each sent message (invoked on Send,
 /// after the channel has registered its outstanding exchange), and `Push` injects an unsolicited
 /// message with no request outstanding.
@@ -61,15 +77,18 @@ type FakeTransport(respondTo: ReadOnlyMemory<byte> -> ReadOnlyMemory<byte> optio
 /// a response. Lets a test reply out of order, to prove Multiplexed matches by id, not arrival order.
 type ManualTransport() =
     let inbound = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
+    let trackedInbound = TrackingAsyncEnumerable(inbound.Reader.ReadAllAsync())
     let sent = System.Collections.Concurrent.ConcurrentQueue<ReadOnlyMemory<byte>>()
     let mutable disposeCount = 0
     member _.Sent = sent
     member _.DisposeCount = Volatile.Read(&disposeCount)
+    member _.ReceiveDisposeCount = trackedInbound.DisposeCount
     member _.Respond(bytes: ReadOnlyMemory<byte>) = inbound.Writer.TryWrite bytes |> ignore
+    member _.CompleteReceive() = inbound.Writer.TryComplete() |> ignore
 
     interface ITransport with
         member _.State = Connected
-        member _.Receive = inbound.Reader.ReadAllAsync()
+        member _.Receive = trackedInbound
 
         member _.Send(message: ReadOnlyMemory<byte>, _ct: CancellationToken) : ValueTask =
             sent.Enqueue message
@@ -153,7 +172,7 @@ let tests =
 
               let! first =
                   task {
-                      let e = channel.Incoming.GetAsyncEnumerator(CancellationToken.None)
+                      use e = channel.Incoming.GetAsyncEnumerator(CancellationToken.None)
                       let! _ = e.MoveNextAsync()
                       return e.Current
                   }
@@ -209,6 +228,35 @@ let tests =
 
               do! Task.WhenAll(firstDispose, secondDispose) |> Async.AwaitTask
               Expect.equal transport.DisposeCount 1 "concurrent DisposeAsync calls dispose the transport once"
+              Expect.equal transport.ReceiveDisposeCount 1 "shutdown disposes the receive enumerator"
+          }
+
+          testCaseAsync "Multiplexed disposal awaits receive-enumerator disposal"
+          <| async {
+              let transport = ManualTransport()
+
+              let channel =
+                  MessageChannel.create (transport :> ITransport) codec codec (Multiplexed idEcho)
+
+              do! channel.DisposeAsync().AsTask() |> Async.AwaitTask
+              Expect.equal transport.ReceiveDisposeCount 1 "DisposeAsync completes after enumerator disposal"
+          }
+
+          testCaseAsync "serve disposes its receive enumerator when the transport completes"
+          <| async {
+              let transport = ManualTransport()
+
+              let serving =
+                  MessageChannel.serve
+                      (transport :> ITransport)
+                      codec
+                      codec
+                      None
+                      (fun request -> Task.FromResult request)
+
+              transport.CompleteReceive()
+              do! serving |> Async.AwaitTask
+              Expect.equal transport.ReceiveDisposeCount 1 "normal server shutdown disposes the enumerator"
           }
 
           testCaseAsync "Multiplexed matches concurrent responses by id, out of order"

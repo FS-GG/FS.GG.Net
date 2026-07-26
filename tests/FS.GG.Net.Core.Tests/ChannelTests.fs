@@ -30,6 +30,11 @@ let idEcho: IdEcho<Env, Env> =
     { Stamp = fun m id -> { m with Id = id }
       Read = fun m -> m.Id }
 
+let private unwrap (ex: exn) =
+    match ex with
+    | :? AggregateException as agg -> agg.Flatten().InnerException
+    | _ -> ex
+
 /// A fake transport: `respondTo` models a server replying to each sent message (invoked on Send,
 /// after the channel has registered its outstanding exchange), and `Push` injects an unsolicited
 /// message with no request outstanding.
@@ -57,7 +62,9 @@ type FakeTransport(respondTo: ReadOnlyMemory<byte> -> ReadOnlyMemory<byte> optio
 type ManualTransport() =
     let inbound = Channel.CreateUnbounded<ReadOnlyMemory<byte>>()
     let sent = System.Collections.Concurrent.ConcurrentQueue<ReadOnlyMemory<byte>>()
+    let mutable disposeCount = 0
     member _.Sent = sent
+    member _.DisposeCount = Volatile.Read(&disposeCount)
     member _.Respond(bytes: ReadOnlyMemory<byte>) = inbound.Writer.TryWrite bytes |> ignore
 
     interface ITransport with
@@ -69,6 +76,7 @@ type ManualTransport() =
             ValueTask.CompletedTask
 
         member _.DisposeAsync() : ValueTask =
+            Interlocked.Increment(&disposeCount) |> ignore
             inbound.Writer.TryComplete() |> ignore
             ValueTask.CompletedTask
 
@@ -129,13 +137,6 @@ let tests =
                   |> Async.AwaitTask
                   |> Async.Catch
 
-              // Async.AwaitTask surfaces a faulted Task's error as an AggregateException; a `task {}`
-              // consumer gets it unwrapped. Unwrap here before matching.
-              let unwrap (ex: exn) =
-                  match ex with
-                  | :? AggregateException as agg -> agg.Flatten().InnerException
-                  | _ -> ex
-
               match result with
               | Choice2Of2 ex when (unwrap ex :? CorrelationMismatch) -> ()
               | Choice2Of2 ex -> failtestf "expected CorrelationMismatch, got %O" ex
@@ -159,6 +160,55 @@ let tests =
                   |> Async.AwaitTask
 
               Expect.equal first.Text "push" "unsolicited message surfaced on Incoming"
+          }
+
+          testCaseAsync "dispose stops admission, settles an exchange, and is idempotent"
+          <| async {
+              let transport = ManualTransport()
+
+              let channel =
+                  MessageChannel.create (transport :> ITransport) codec codec (Sequential None)
+
+              let activeExchange =
+                  channel.Exchange({ Id = 0UL; Text = "pending" }, CancellationToken.None)
+
+              while transport.Sent.IsEmpty do
+                  do! Async.Sleep 5
+
+              // This second call is admitted but parked on the one-permit gate. Disposal must
+              // settle both it and the active waiter before that gate can be disposed.
+              let queuedExchange =
+                  channel.Exchange({ Id = 0UL; Text = "queued" }, CancellationToken.None)
+
+              let firstDispose = channel.DisposeAsync().AsTask()
+              let secondDispose = channel.DisposeAsync().AsTask()
+
+              let! exchangeResults =
+                  [| activeExchange; queuedExchange |]
+                  |> Array.map (Async.AwaitTask >> Async.Catch)
+                  |> Async.Parallel
+
+              for exchangeResult in exchangeResults do
+                  match exchangeResult with
+                  | Choice2Of2 ex when (unwrap ex :? ObjectDisposedException) ->
+                      failtestf "gate disposal masked channel closure: %O" ex
+                  | Choice2Of2 _ -> ()
+                  | Choice1Of2 _ ->
+                      failtest "an admitted exchange must settle when the channel closes"
+
+              let! rejected =
+                  channel.Exchange({ Id = 0UL; Text = "late" }, CancellationToken.None)
+                  |> Async.AwaitTask
+                  |> Async.Catch
+
+              match rejected with
+              | Choice2Of2 ex when (unwrap ex :? ObjectDisposedException) -> ()
+              | Choice2Of2 ex ->
+                  failtestf "expected ObjectDisposedException after admission stopped, got %O" ex
+              | Choice1Of2 _ -> failtest "an exchange was admitted after disposal started"
+
+              do! Task.WhenAll(firstDispose, secondDispose) |> Async.AwaitTask
+              Expect.equal transport.DisposeCount 1 "concurrent DisposeAsync calls dispose the transport once"
           }
 
           testCaseAsync "Multiplexed matches concurrent responses by id, out of order"

@@ -63,8 +63,38 @@ module MessageChannel =
         let mutable pending: TaskCompletionSource<'Resp> option = None
         let incoming = Channel.CreateUnbounded<'Resp>()
         let loopCts = new CancellationTokenSource()
+        let disposeCts = new CancellationTokenSource()
+        let lifecycleSync = obj ()
+        let disposeCompletion =
+            TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+        let mutable disposeStarted = false
+        let mutable activeExchanges = 0
+        let mutable drainWaiter: TaskCompletionSource<unit> option = None
         // Guarded by `gate` (single in-flight), so a plain increment is safe — no Interlocked needed.
         let mutable nextId = 0UL
+
+        let tryEnterExchange () =
+            lock lifecycleSync (fun () ->
+                if disposeStarted then
+                    false
+                else
+                    activeExchanges <- activeExchanges + 1
+                    true)
+
+        let leaveExchange () =
+            let waiter =
+                lock lifecycleSync (fun () ->
+                    activeExchanges <- activeExchanges - 1
+
+                    if disposeStarted && activeExchanges = 0 then
+                        let waiter = drainWaiter
+                        drainWaiter <- None
+                        waiter
+                    else
+                        None)
+
+            waiter
+            |> Option.iter (fun tcs -> tcs.TrySetResult() |> ignore)
 
         let receiveLoop () : Task =
             task {
@@ -103,57 +133,116 @@ module MessageChannel =
 
         let loop = receiveLoop ()
 
+        let dispose () : Task =
+            let shouldStart, drained =
+                lock lifecycleSync (fun () ->
+                    if disposeStarted then
+                        false, disposeCompletion.Task :> Task
+                    else
+                        disposeStarted <- true
+
+                        let drained =
+                            if activeExchanges = 0 then
+                                Task.CompletedTask
+                            else
+                                let waiter =
+                                    TaskCompletionSource<unit>(
+                                        TaskCreationOptions.RunContinuationsAsynchronously
+                                    )
+
+                                drainWaiter <- Some waiter
+                                waiter.Task :> Task
+
+                        true, drained)
+
+            if shouldStart then
+                // Stop queued and in-flight exchanges first. Their outer `finally` blocks release
+                // the gate and decrement `activeExchanges`; only after all of them have settled may
+                // disposal tear down the receive loop, transport, and synchronization primitives.
+                disposeCts.Cancel()
+
+                task {
+                    try
+                        try
+                            do! drained
+                            loopCts.Cancel()
+                            incoming.Writer.TryComplete() |> ignore
+                            do! loop
+                            do! transport.DisposeAsync().AsTask()
+                        finally
+                            gate.Dispose()
+                            disposeCts.Dispose()
+                            loopCts.Dispose()
+
+                        disposeCompletion.TrySetResult() |> ignore
+                    with ex ->
+                        disposeCompletion.TrySetException ex |> ignore
+                }
+                |> ignore
+
+            disposeCompletion.Task
+
         { new IMessageChannel<'Req, 'Resp> with
             member _.State = transport.State
             member _.Incoming = incoming.Reader.ReadAllAsync()
 
             member _.Exchange(request: 'Req, ct: CancellationToken) : Task<'Resp> =
                 task {
-                    do! gate.WaitAsync ct
+                    if not (tryEnterExchange ()) then
+                        raise (ObjectDisposedException("IMessageChannel"))
 
                     try
-                        let tcs =
-                            TaskCompletionSource<'Resp>(TaskCreationOptions.RunContinuationsAsynchronously)
+                        use linkedCts =
+                            CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)
 
-                        let stamped, expected =
-                            match idEcho with
-                            | Some echo ->
-                                nextId <- nextId + 1UL
-                                echo.Stamp request nextId, Some nextId
-                            | None -> request, None
-
-                        lock sync (fun () -> pending <- Some tcs)
-                        use _reg = ct.Register(fun () -> tcs.TrySetCanceled ct |> ignore)
+                        let exchangeCt = linkedCts.Token
+                        do! gate.WaitAsync exchangeCt
 
                         try
-                            do! transport.Send(requestCodec.Encode stamped, ct)
-                            let! resp = tcs.Task
+                            let tcs =
+                                TaskCompletionSource<'Resp>(
+                                    TaskCreationOptions.RunContinuationsAsynchronously
+                                )
 
-                            match idEcho, expected with
-                            | Some echo, Some expectedId ->
-                                let actual = echo.Read resp
-                                if actual <> expectedId then
-                                    raise (CorrelationMismatch(expectedId, actual))
-                            | _ -> ()
+                            let stamped, expected =
+                                match idEcho with
+                                | Some echo ->
+                                    nextId <- nextId + 1UL
+                                    echo.Stamp request nextId, Some nextId
+                                | None -> request, None
 
-                            return resp
+                            lock sync (fun () -> pending <- Some tcs)
+                            use _reg =
+                                exchangeCt.Register(fun () ->
+                                    tcs.TrySetCanceled exchangeCt |> ignore)
+
+                            try
+                                do! transport.Send(requestCodec.Encode stamped, exchangeCt)
+                                let! resp = tcs.Task
+
+                                match idEcho, expected with
+                                | Some echo, Some expectedId ->
+                                    let actual = echo.Read resp
+                                    if actual <> expectedId then
+                                        raise (CorrelationMismatch(expectedId, actual))
+                                | _ -> ()
+
+                                return resp
+                            finally
+                                // Drop our own slot if it is still outstanding (cancel/fault path), so a
+                                // late response cannot land on the NEXT exchange's waiter.
+                                lock sync (fun () ->
+                                    match pending with
+                                    | Some p when obj.ReferenceEquals(p, tcs) -> pending <- None
+                                    | _ -> ())
                         finally
-                            // Drop our own slot if it is still outstanding (cancel/fault path), so a
-                            // late response cannot land on the NEXT exchange's waiter.
-                            lock sync (fun () ->
-                                match pending with
-                                | Some p when obj.ReferenceEquals(p, tcs) -> pending <- None
-                                | _ -> ())
+                            gate.Release() |> ignore
                     finally
-                        gate.Release() |> ignore
+                        leaveExchange ()
                 }
 
             member _.DisposeAsync() : ValueTask =
-                loopCts.Cancel()
-                incoming.Writer.TryComplete() |> ignore
-                loop |> ignore
-                gate.Dispose()
-                transport.DisposeAsync() }
+                ValueTask(dispose ()) }
 
     /// The Multiplexed channel: many requests in flight at once. Each Exchange stamps a unique,
     /// monotonic id, registers its waiter in a concurrent map keyed by that id, and sends. The

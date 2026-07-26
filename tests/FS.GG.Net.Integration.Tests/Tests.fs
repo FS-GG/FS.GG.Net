@@ -27,7 +27,7 @@ let private unwrap (ex: exn) =
 /// Read one message off an ITransport's / channel's inbound stream.
 let private firstOf (source: Collections.Generic.IAsyncEnumerable<'a>) : Task<'a> =
     task {
-        let e = source.GetAsyncEnumerator(CancellationToken.None)
+        use e = source.GetAsyncEnumerator(CancellationToken.None)
         let! _ = e.MoveNextAsync()
         return e.Current
     }
@@ -50,6 +50,32 @@ let private fakeChannel (reply: 'Resp) : IMessageChannel<'Req, 'Resp> =
         member _.Exchange(_req, _ct) = Task.FromResult reply
         member _.Incoming = empty.Reader.ReadAllAsync()
         member _.DisposeAsync() = ValueTask() }
+
+type private CancellationTrackingEnumerable<'T>() =
+    let started = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+    let disposed = TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+    member _.Started = started.Task
+    member _.Disposed = disposed.Task
+
+    interface IAsyncEnumerable<'T> with
+        member _.GetAsyncEnumerator(ct: CancellationToken) =
+            started.TrySetResult() |> ignore
+
+            { new IAsyncEnumerator<'T> with
+                member _.Current = Unchecked.defaultof<'T>
+
+                member _.MoveNextAsync() =
+                    ValueTask<bool>(
+                        task {
+                            do! Task.Delay(Timeout.InfiniteTimeSpan, ct)
+                            return false
+                        }
+                    )
+
+                member _.DisposeAsync() =
+                    disposed.TrySetResult() |> ignore
+                    ValueTask.CompletedTask }
 
 type Msg =
     | Got of StringValue
@@ -244,6 +270,27 @@ let tests =
               | Msg.Failed e -> failtestf "unexpected error: %O" e
           }
 
+          testCaseAsync "Elmish Sub.incoming disposes its enumerator when cancelled"
+          <| async {
+              let incoming = CancellationTrackingEnumerable<StringValue>()
+
+              let channel =
+                  { new IMessageChannel<StringValue, StringValue> with
+                      member _.State = Connected
+                      member _.Exchange(request, _ct) = Task.FromResult request
+                      member _.Incoming = incoming
+                      member _.DisposeAsync() = ValueTask.CompletedTask }
+
+              let _, start =
+                  Net.Sub.incoming channel "dispose-tracking" Msg.Got
+                  |> List.exactlyOne
+
+              let subscription = start ignore
+              do! incoming.Started.WaitAsync(TimeSpan.FromSeconds 5.0) |> Async.AwaitTask
+              subscription.Dispose()
+              do! incoming.Disposed.WaitAsync(TimeSpan.FromSeconds 5.0) |> Async.AwaitTask
+          }
+
           testCaseAsync "gRPC code-first: unary + server-streaming round-trip via FS.GG.Net.Grpc"
           <| async {
               // Plaintext HTTP/2 (h2c) for the no-TLS in-process server.
@@ -272,6 +319,7 @@ let tests =
                   if moved then ticks.Add e.Current.N else go <- false
 
               Expect.sequenceEqual (List.ofSeq ticks) [ 1; 2; 3 ] "server-streaming yields 1..3"
+              do! e.DisposeAsync().AsTask() |> Async.AwaitTask
 
               match GrpcTransport.stateOf channel with
               | Faulted _ -> failtest "channel faulted after successful calls"

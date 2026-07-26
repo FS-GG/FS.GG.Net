@@ -25,7 +25,7 @@ module Net =
                 let work =
                     task {
                         try
-                            let e = channel.Incoming.GetAsyncEnumerator(cts.Token)
+                            use e = channel.Incoming.GetAsyncEnumerator(cts.Token)
                             let mutable go = true
 
                             while go do

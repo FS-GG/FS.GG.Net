@@ -111,6 +111,11 @@ type IMessageChannel<'Req, 'Resp> =
 exception CorrelationMismatch of expected: uint64 * actual: uint64
 
 /// Public contract exposed by this FS.GG.Net.Core package.
+/// Raised when a message channel terminates before an exchange receives its response. `cause`
+/// identifies the underlying transport/codec failure when termination was not a clean close.
+exception MessageChannelClosed of cause: exn option
+
+/// Public contract exposed by this FS.GG.Net.Core package.
 [<RequireQualifiedAccess>]
 module MessageChannel =
     /// Build a message channel over `transport`, using the given codecs and correlation strategy.

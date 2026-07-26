@@ -185,6 +185,34 @@ let tests =
               Expect.equal first.Text "push" "unsolicited message surfaced on Incoming"
           }
 
+          testCaseAsync "clean EOF faults an outstanding exchange with MessageChannelClosed"
+          <| async {
+              let transport = ManualTransport()
+
+              let channel =
+                  MessageChannel.create (transport :> ITransport) codec codec (Sequential None)
+
+              let exchange =
+                  channel.Exchange({ Id = 0UL; Text = "pending" }, CancellationToken.None)
+
+              while transport.Sent.IsEmpty do
+                  do! Async.Sleep 5
+
+              transport.CompleteReceive()
+
+              let! result =
+                  exchange.WaitAsync(TimeSpan.FromSeconds 5.0)
+                  |> Async.AwaitTask
+                  |> Async.Catch
+
+              match result with
+              | Choice2Of2 ex when (unwrap ex :? MessageChannelClosed) -> ()
+              | Choice2Of2 ex -> failtestf "expected MessageChannelClosed, got %O" ex
+              | Choice1Of2 _ -> failtest "an exchange returned after EOF without a response"
+
+              do! channel.DisposeAsync().AsTask() |> Async.AwaitTask
+          }
+
           testCaseAsync "dispose stops admission, settles an exchange, and is idempotent"
           <| async {
               let transport = ManualTransport()
@@ -213,9 +241,8 @@ let tests =
 
               for exchangeResult in exchangeResults do
                   match exchangeResult with
-                  | Choice2Of2 ex when (unwrap ex :? ObjectDisposedException) ->
-                      failtestf "gate disposal masked channel closure: %O" ex
-                  | Choice2Of2 _ -> ()
+                  | Choice2Of2 ex when (unwrap ex :? MessageChannelClosed) -> ()
+                  | Choice2Of2 ex -> failtestf "expected MessageChannelClosed, got %O" ex
                   | Choice1Of2 _ ->
                       failtest "an admitted exchange must settle when the channel closes"
 
@@ -225,9 +252,9 @@ let tests =
                   |> Async.Catch
 
               match rejected with
-              | Choice2Of2 ex when (unwrap ex :? ObjectDisposedException) -> ()
+              | Choice2Of2 ex when (unwrap ex :? MessageChannelClosed) -> ()
               | Choice2Of2 ex ->
-                  failtestf "expected ObjectDisposedException after admission stopped, got %O" ex
+                  failtestf "expected MessageChannelClosed after admission stopped, got %O" ex
               | Choice1Of2 _ -> failtest "an exchange was admitted after disposal started"
 
               do! Task.WhenAll(firstDispose, secondDispose) |> Async.AwaitTask

@@ -65,6 +65,8 @@ type IMessageChannel<'Req, 'Resp> =
 
 exception CorrelationMismatch of expected: uint64 * actual: uint64
 
+exception MessageChannelClosed of cause: exn option
+
 [<RequireQualifiedAccess>]
 module MessageChannel =
 
@@ -91,16 +93,20 @@ module MessageChannel =
         let mutable disposeStarted = false
         let mutable activeExchanges = 0
         let mutable drainWaiter: TaskCompletionSource<unit> option = None
+        let mutable terminalError: exn option = None
         // Guarded by `gate` (single in-flight), so a plain increment is safe — no Interlocked needed.
         let mutable nextId = 0UL
 
         let tryEnterExchange () =
             lock lifecycleSync (fun () ->
-                if disposeStarted then
-                    false
-                else
+                match terminalError with
+                | Some error -> Error error
+                | None ->
                     activeExchanges <- activeExchanges + 1
-                    true)
+                    Ok())
+
+        let getTerminalError () =
+            lock lifecycleSync (fun () -> terminalError)
 
         let leaveExchange () =
             let waiter =
@@ -116,6 +122,34 @@ module MessageChannel =
 
             waiter
             |> Option.iter (fun tcs -> tcs.TrySetResult() |> ignore)
+
+        let terminate (cause: exn option) =
+            let error, waiting, firstTermination =
+                lock lifecycleSync (fun () ->
+                    match terminalError with
+                    | Some error -> error, None, false
+                    | None ->
+                        let error = MessageChannelClosed cause
+                        terminalError <- Some error
+
+                        let waiting =
+                            lock sync (fun () ->
+                                let waiting = pending
+                                pending <- None
+                                waiting)
+
+                        error, waiting, true)
+
+            if firstTermination then
+                // Settle the active waiter before waking callers queued on the gate. Every admitted
+                // exchange therefore observes the same typed terminal error, never a bare cancellation.
+                waiting
+                |> Option.iter (fun tcs -> tcs.TrySetException error |> ignore)
+
+                incoming.Writer.TryComplete error |> ignore
+                disposeCts.Cancel()
+
+            error
 
         let receiveLoop () : Task =
             task {
@@ -140,21 +174,22 @@ module MessageChannel =
                             | Some tcs -> tcs.TrySetResult resp |> ignore
                             | None -> incoming.Writer.TryWrite resp |> ignore
 
-                    incoming.Writer.TryComplete() |> ignore
+                    terminate None |> ignore
                 with ex ->
-                    lock sync (fun () ->
-                        match pending with
-                        | Some tcs -> tcs.TrySetException ex |> ignore
-                        | None -> ()
+                    let cause =
+                        match ex with
+                        | :? OperationCanceledException when loopCts.IsCancellationRequested -> None
+                        | _ -> Some ex
 
-                        pending <- None)
-
-                    incoming.Writer.TryComplete ex |> ignore
+                    terminate cause |> ignore
             }
 
         let loop = receiveLoop ()
 
         let dispose () : Task =
+            // Stop admission and settle all admitted exchanges before waiting for them to drain.
+            terminate None |> ignore
+
             let shouldStart, drained =
                 lock lifecycleSync (fun () ->
                     if disposeStarted then
@@ -177,11 +212,6 @@ module MessageChannel =
                         true, drained)
 
             if shouldStart then
-                // Stop queued and in-flight exchanges first. Their outer `finally` blocks release
-                // the gate and decrement `activeExchanges`; only after all of them have settled may
-                // disposal tear down the receive loop, transport, and synchronization primitives.
-                disposeCts.Cancel()
-
                 task {
                     try
                         try
@@ -209,55 +239,61 @@ module MessageChannel =
 
             member _.Exchange(request: 'Req, ct: CancellationToken) : Task<'Resp> =
                 task {
-                    if not (tryEnterExchange ()) then
-                        raise (ObjectDisposedException("IMessageChannel"))
+                    match tryEnterExchange () with
+                    | Error error -> raise error
+                    | Ok() -> ()
 
                     try
-                        use linkedCts =
-                            CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)
-
-                        let exchangeCt = linkedCts.Token
-                        do! gate.WaitAsync exchangeCt
-
                         try
-                            let tcs =
-                                TaskCompletionSource<'Resp>(
-                                    TaskCreationOptions.RunContinuationsAsynchronously
-                                )
+                            use linkedCts =
+                                CancellationTokenSource.CreateLinkedTokenSource(ct, disposeCts.Token)
 
-                            let stamped, expected =
-                                match idEcho with
-                                | Some echo ->
-                                    nextId <- nextId + 1UL
-                                    echo.Stamp request nextId, Some nextId
-                                | None -> request, None
-
-                            lock sync (fun () -> pending <- Some tcs)
-                            use _reg =
-                                exchangeCt.Register(fun () ->
-                                    tcs.TrySetCanceled exchangeCt |> ignore)
+                            let exchangeCt = linkedCts.Token
+                            do! gate.WaitAsync exchangeCt
 
                             try
-                                do! transport.Send(requestCodec.Encode stamped, exchangeCt)
-                                let! resp = tcs.Task
+                                let tcs =
+                                    TaskCompletionSource<'Resp>(
+                                        TaskCreationOptions.RunContinuationsAsynchronously
+                                    )
 
-                                match idEcho, expected with
-                                | Some echo, Some expectedId ->
-                                    let actual = echo.Read resp
-                                    if actual <> expectedId then
-                                        raise (CorrelationMismatch(expectedId, actual))
-                                | _ -> ()
+                                let stamped, expected =
+                                    match idEcho with
+                                    | Some echo ->
+                                        nextId <- nextId + 1UL
+                                        echo.Stamp request nextId, Some nextId
+                                    | None -> request, None
 
-                                return resp
+                                lock sync (fun () -> pending <- Some tcs)
+                                use _reg =
+                                    exchangeCt.Register(fun () ->
+                                        tcs.TrySetCanceled exchangeCt |> ignore)
+
+                                try
+                                    do! transport.Send(requestCodec.Encode stamped, exchangeCt)
+                                    let! resp = tcs.Task
+
+                                    match idEcho, expected with
+                                    | Some echo, Some expectedId ->
+                                        let actual = echo.Read resp
+                                        if actual <> expectedId then
+                                            raise (CorrelationMismatch(expectedId, actual))
+                                    | _ -> ()
+
+                                    return resp
+                                finally
+                                    // Drop our own slot if it is still outstanding (cancel/fault path), so a
+                                    // late response cannot land on the NEXT exchange's waiter.
+                                    lock sync (fun () ->
+                                        match pending with
+                                        | Some p when obj.ReferenceEquals(p, tcs) -> pending <- None
+                                        | _ -> ())
                             finally
-                                // Drop our own slot if it is still outstanding (cancel/fault path), so a
-                                // late response cannot land on the NEXT exchange's waiter.
-                                lock sync (fun () ->
-                                    match pending with
-                                    | Some p when obj.ReferenceEquals(p, tcs) -> pending <- None
-                                    | _ -> ())
-                        finally
-                            gate.Release() |> ignore
+                                gate.Release() |> ignore
+                        with :? OperationCanceledException as canceled ->
+                            match getTerminalError () with
+                            | Some error -> return raise error
+                            | None -> return raise canceled
                     finally
                         leaveExchange ()
                 }

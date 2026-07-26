@@ -55,6 +55,32 @@ type ServerEcho<'Req, 'Resp> =
       /// Return the response carrying that id (echoed back to the client).
       StampId: 'Resp -> uint64 -> 'Resp }
 
+/// The operation that failed while serving one request.
+[<RequireQualifiedAccess>]
+type ServeFailureStage =
+    | HandlerExecution
+    | ResponseSend
+
+/// A promptly observed request failure. Reporting it does not terminate the connection.
+type ServeDiagnostic =
+    { Stage: ServeFailureStage
+      Error: exn }
+
+/// Controls bounded concurrent request handling and shutdown for `MessageChannel.serveWithOptions`.
+type ServeOptions =
+    { /// Maximum concurrent handlers when an id echo permits out-of-order replies.
+      MaxConcurrentHandlers: int
+      /// Cancels receive admission and is linked into active handlers and sends.
+      CancellationToken: CancellationToken
+      /// Receives handler and response failures as they occur.
+      OnDiagnostic: ServeDiagnostic -> unit }
+
+/// Defaults for bounded server-side request handling.
+[<RequireQualifiedAccess>]
+module ServeOptions =
+    /// A 64-handler bound, no caller cancellation, and a no-op diagnostic sink.
+    val defaults: ServeOptions
+
 /// Public contract type exposed by this FS.GG.Net.Core package.
 /// How responses are matched to requests on a message channel. The two axes — matching (by order vs
 /// by id) and concurrency (single-in-flight vs pipelined) — collapse to the two sane combinations.
@@ -101,12 +127,24 @@ module MessageChannel =
     /// Serve inbound requests on a transport — the server side of a channel. Decodes each request,
     /// runs `handler`, and sends the response, id-echoed via `echo` so the client's correlator matches
     /// it. With `echo`, requests are handled concurrently and replies may go out in any order; without
-    /// it, requests are handled one at a time and replied in arrival order. A handler that throws is
-    /// swallowed (a bad request must not drop the connection). Completes when the transport closes.
+    /// it, requests are handled one at a time and replied in arrival order. Uses bounded defaults;
+    /// prefer `serveWithOptions` when the caller needs cancellation or diagnostics.
     val serve:
         transport: ITransport ->
         requestCodec: IMessageCodec<'Req> ->
         responseCodec: IMessageCodec<'Resp> ->
         echo: ServerEcho<'Req, 'Resp> option ->
         handler: ('Req -> Task<'Resp>) ->
+            Task
+
+    /// Serve with an explicit concurrency bound, linked cancellation, and structured diagnostics.
+    /// Cancellation is propagated to active handlers; normal transport shutdown drains every admitted
+    /// request. In both cases, active handlers settle before this task completes.
+    val serveWithOptions:
+        transport: ITransport ->
+        requestCodec: IMessageCodec<'Req> ->
+        responseCodec: IMessageCodec<'Resp> ->
+        echo: ServerEcho<'Req, 'Resp> option ->
+        options: ServeOptions ->
+        handler: ('Req -> CancellationToken -> Task<'Resp>) ->
             Task

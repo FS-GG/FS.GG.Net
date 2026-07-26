@@ -30,6 +30,10 @@ let idEcho: IdEcho<Env, Env> =
     { Stamp = fun m id -> { m with Id = id }
       Read = fun m -> m.Id }
 
+let serverEcho: ServerEcho<Env, Env> =
+    { ReadId = fun m -> m.Id
+      StampId = fun m id -> { m with Id = id } }
+
 let private unwrap (ex: exn) =
     match ex with
     | :? AggregateException as agg -> agg.Flatten().InnerException
@@ -259,6 +263,127 @@ let tests =
               Expect.equal transport.ReceiveDisposeCount 1 "normal server shutdown disposes the enumerator"
           }
 
+          testCaseAsync "serveWithOptions bounds concurrent handlers"
+          <| async {
+              let transport = ManualTransport()
+              let release = TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+              let started = System.Collections.Concurrent.ConcurrentQueue<int>()
+              let sync = obj ()
+              let mutable active = 0
+              let mutable maximum = 0
+
+              let handler (request: Env) (_ct: CancellationToken) =
+                  task {
+                      let current = Interlocked.Increment(&active)
+                      lock sync (fun () -> maximum <- max maximum current)
+                      started.Enqueue(int request.Id)
+                      do! release.Task
+                      Interlocked.Decrement(&active) |> ignore
+                      return request
+                  }
+
+              let options =
+                  { ServeOptions.defaults with
+                      MaxConcurrentHandlers = 2 }
+
+              let serving =
+                  MessageChannel.serveWithOptions
+                      (transport :> ITransport)
+                      codec
+                      codec
+                      (Some serverEcho)
+                      options
+                      handler
+
+              for id in 1UL..3UL do
+                  transport.Respond(codec.Encode { Id = id; Text = string id })
+
+              while started.Count < 2 do
+                  do! Async.Sleep 5
+
+              do! Async.Sleep 25
+              Expect.equal started.Count 2 "the third request waits behind the concurrency bound"
+              Expect.equal maximum 2 "no more than two handlers run concurrently"
+
+              transport.CompleteReceive()
+              Expect.isFalse serving.IsCompleted "normal shutdown drains active and queued requests"
+              release.TrySetResult() |> ignore
+              do! serving |> Async.AwaitTask
+              Expect.equal started.Count 3 "every admitted request is drained"
+          }
+
+          testCaseAsync "serveWithOptions links cancellation and drains active handlers"
+          <| async {
+              let transport = ManualTransport()
+              use stop = new CancellationTokenSource()
+              let started = TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+              let cancelled = TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+              let finish = TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously)
+
+              let handler (request: Env) (ct: CancellationToken) =
+                  task {
+                      started.TrySetResult() |> ignore
+
+                      try
+                          do! Task.Delay(Timeout.InfiniteTimeSpan, ct)
+                      with :? OperationCanceledException ->
+                          cancelled.TrySetResult() |> ignore
+
+                      do! finish.Task
+                      return request
+                  }
+
+              let options =
+                  { ServeOptions.defaults with
+                      CancellationToken = stop.Token }
+
+              let serving =
+                  MessageChannel.serveWithOptions
+                      (transport :> ITransport)
+                      codec
+                      codec
+                      (Some serverEcho)
+                      options
+                      handler
+
+              transport.Respond(codec.Encode { Id = 1UL; Text = "active" })
+              do! started.Task |> Async.AwaitTask
+              stop.Cancel()
+              do! cancelled.Task |> Async.AwaitTask
+              Expect.isFalse serving.IsCompleted "shutdown waits for the active handler to drain"
+              finish.TrySetResult() |> ignore
+              do! serving |> Async.AwaitTask
+          }
+
+          testCaseAsync "serveWithOptions reports handler failures promptly"
+          <| async {
+              let transport = ManualTransport()
+
+              let diagnostic =
+                  TaskCompletionSource<ServeDiagnostic>(TaskCreationOptions.RunContinuationsAsynchronously)
+
+              let options =
+                  { ServeOptions.defaults with
+                      OnDiagnostic = fun event -> diagnostic.TrySetResult event |> ignore }
+
+              let serving =
+                  MessageChannel.serveWithOptions
+                      (transport :> ITransport)
+                      codec
+                      codec
+                      (Some serverEcho)
+                      options
+                      (fun _ _ -> Task.FromException<Env>(InvalidOperationException "boom"))
+
+              transport.Respond(codec.Encode { Id = 1UL; Text = "bad" })
+              let! observed = diagnostic.Task.WaitAsync(TimeSpan.FromSeconds 5.0) |> Async.AwaitTask
+              Expect.equal observed.Stage ServeFailureStage.HandlerExecution "failure stage is structured"
+              Expect.equal observed.Error.Message "boom" "the original handler failure is retained"
+              Expect.isFalse serving.IsCompleted "the diagnostic is emitted before another message or shutdown"
+              transport.CompleteReceive()
+              do! serving |> Async.AwaitTask
+          }
+
           testCaseAsync "Multiplexed matches concurrent responses by id, out of order"
           <| async {
               let transport = ManualTransport()
@@ -292,10 +417,6 @@ let tests =
               // The server side (MessageChannel.serve, id-echoed, concurrent) wired to a Multiplexed
               // client over an in-memory duplex pair — the full client/server correlation loop.
               let clientEnd, serverEnd = pair ()
-
-              let serverEcho: ServerEcho<Env, Env> =
-                  { ReadId = fun m -> m.Id
-                    StampId = fun m id -> { m with Id = id } }
 
               let handler (req: Env) : Task<Env> = Task.FromResult { req with Text = "ok:" + req.Text }
               let _serveLoop = MessageChannel.serve serverEnd codec codec (Some serverEcho) handler

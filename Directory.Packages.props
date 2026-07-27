@@ -8,7 +8,14 @@
   <ItemGroup>
     <!-- The coordination kit as a versioned package (ADR-0062, .github#1262 / .github#1291).
          Referenced by .config/kit/FS.GG.Kit.receiver.proj, which materializes the kit onto disk;
-         Renovate bumps this pin and kit-materialize.yml refreshes the committed kit on that PR. -->
+         Renovate is MEANT to bump this pin, with kit-materialize.yml refreshing the committed kit on
+         that PR. That arm is currently DEAD here (.github#1552): the org preset disables this whole
+         FILE for every repo but FS-GG/.github, so no FS.GG.Kit PR is ever proposed for FS.GG.Net, and
+         kit-materialize.yml — gated to renovate/* branches — never fires for its primary trigger.
+         Until #1552 lands this pin must be bumped BY HAND and the materialize run explicitly:
+             dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitMaterialize
+         Skipping that is what red-lit `coordination-coherence` on main (#37). Do NOT re-enable the
+         file with a local Renovate rule — that is a second dialect (.github#850); land #1552. -->
     <PackageVersion Include="FS.GG.Kit" Version="0.8.0" />
 
     <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).

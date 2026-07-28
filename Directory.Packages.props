@@ -16,7 +16,7 @@
              dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitMaterialize
          Skipping that is what red-lit `coordination-coherence` on main (#37). Do NOT re-enable the
          file with a local Renovate rule — that is a second dialect (.github#850); land #1552. -->
-    <PackageVersion Include="FS.GG.Kit" Version="0.17.0" />
+    <PackageVersion Include="FS.GG.Kit" Version="0.18.0" />
 
     <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).
          FS.GG.Net.Core depends on FSharp.Core ALONE. -->

@@ -41,36 +41,55 @@ jobs:
       - name: Test (--no-restore)
         run: dotnet test FS.GG.Net.slnx -c Debug --no-restore
 
-  # ADR-0067 §9 phase 4 (FS-GG/.github#1721). `.agents/skills` is a generated VIEW of `.claude/skills`
-  # rather than a second committed copy, so two facts that used to be enforced by the mere presence of
-  # committed files now need a check of their own:
-  #
-  #   1. the view is PRODUCIBLE and VISIBLE in a bare checkout — `FsggKitCheckSkillView` (ADR-0067 §8),
-  #      preceded by the receiver's own generate target. A fresh clone never carries a view root, so
-  #      this exercises the exact path a developer machine and the kit-materialize runner both take.
-  #   2. the runtime root SET is still ADR-0011's two — `tests/composition/skill-view-roots.sh`.
-  #      Nothing else can see a root leave the contract: coordination-coherence reads only
-  #      <FsggKitSkillRoots>, and FsggKitCheckSkillView reports "nothing to assert" when
-  #      <FsggKitViewSkillRoots> is empty. Both measured green on a mutated tree before this job
-  #      existed; that silent pair is what ADR-0067 §8 forbids trading a loud failure for.
-  #
-  # `gate` is NOT a required status check — FS-GG/FS.GG.Net's `main` carries no branch protection and
-  # no rulesets at all (FS-GG/.github#1714). This job fails loudly; it does not block a merge. That is
-  # #1714's subject to decide, not this job's to work around.
-  composition:
-    name: Composition (runtime skill roots)
-    runs-on: ubuntu-latest
-    if: github.repository == 'FS-GG/FS.GG.Net'
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.x'
+      # ── ADR-0067 §8's runtime skill-root alarm, ON A CONTEXT THAT CAN BLOCK ──────────────────
+      # This used to be a separate `composition` job named `Composition (runtime skill roots)`,
+      # and FS-GG/.github#1727's whole subject was that **it was the one check that could not block
+      # a merge**. It lives here now, and that resolves #1727 WITHOUT touching branch protection.
+      #
+      # THE DECISION #1727 ASKS FOR (AC1): `Composition (runtime skill roots)` does NOT join the
+      # required set — it ceases to exist, and its assertion moves into a context that is ALREADY
+      # required. Read from the API rather than from this file's prose, 2026-07-28:
+      #
+      #   $ gh api repos/FS-GG/FS.GG.Net/branches/main/protection
+      #   contexts: ["Build + test (locked restore)", "kit / coordination-kit",
+      #              "contract-coherence / coherence"]        enforce_admins: true
+      #
+      # `Build + test (locked restore)` is THIS job. So the alarm blocks a merge from the moment
+      # this lands, with no protection edit and no admin decision — and #1727 AC2's whole hazard
+      # goes away by construction: nothing is newly REQUIRED, so nothing can strand a PR at
+      # "Expected — waiting for status to be reported" (FS.GG.SDD#370/#525, and #1714's own
+      # lock-ranges correction, all paid for that exact mistake). It is also the shape FS.GG.Audio
+      # settled on, which is the fleet majority.
+      #
+      # CORRECTION TO THIS FILE'S OWN PROSE, WHICH WAS WRONG (the same class as FS.GG.Audio#211).
+      # The deleted comment claimed *"`gate` is NOT a required status check — FS-GG/FS.GG.Net's
+      # `main` carries no branch protection and no rulesets at all"*. Protection says otherwise and
+      # protection is what blocks merges. #1714 armed the three contexts above at 07:14:24Z and the
+      # retirement that wrote that sentence landed at 07:25Z, so it was already false when written.
+      #
+      # ONE IMPLEMENTATION, NOT THIS REPO'S OWN (FS-GG/.github#1710). The 13,004-byte
+      # `tests/composition/skill-view-roots.sh` is deleted. Seven receivers hand-wrote the same
+      # alarm on the same day (23,050 B down to 10,798 B, a 55% spread over one invariant);
+      # `scripts/skill-view` is a KIT-DELIVERED file, so the assertion lives there and this repo
+      # calls it. This repo LOSES NOTHING in the trade and gains two lanes:
+      #   * its `assert_view_root_is_not_tracked` lane — the only one of the seven that asked git
+      #     whether a view root had been re-committed — was ADOPTED INTO the kit and now runs for
+      #     every receiver, not just this one;
+      #   * it had NO view-resolution lane at all, so a dangling `.agents/skills`, a plain text file
+      #     where the directory belongs, and a partial view were unobserved here. All three red now.
+      #
+      # ABSENCE IS RED HERE, AND THAT NEEDS NO CARVE-OUT. The step below runs the generate first, so
+      # by the time `check` runs the view MUST exist — `--absent-ok` is deliberately NOT passed.
+      # That is the stronger of the two postures the fleet uses, and this job earns it by generating.
       - name: Generate the view and assert it is visible
         run: dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitCheckSkillView
-      - name: Assert the runtime skill-root set is ADR-0011's two
-        run: bash tests/composition/skill-view-roots.sh
+      - name: The runtime skill-root alarm can fire (every lane, mutation-tested demo)
+        run: bash scripts/skill-view selftest
+      - name: Assert the runtime skill-root contract — declaration, view, and tracking
+        run: |
+          bash scripts/skill-view check \
+            --source .claude/skills \
+            --receiver-proj .config/kit/FS.GG.Kit.receiver.proj
 
   # Cross-repo contract-coherence gate. The authority workflow validates the org registry and its
   # declared FS.GG.Contracts package pin. Net is not a build-config receiver, so that leg has no

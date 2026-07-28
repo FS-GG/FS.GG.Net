@@ -41,6 +41,37 @@ jobs:
       - name: Test (--no-restore)
         run: dotnet test FS.GG.Net.slnx -c Debug --no-restore
 
+  # ADR-0067 §9 phase 4 (FS-GG/.github#1721). `.agents/skills` is a generated VIEW of `.claude/skills`
+  # rather than a second committed copy, so two facts that used to be enforced by the mere presence of
+  # committed files now need a check of their own:
+  #
+  #   1. the view is PRODUCIBLE and VISIBLE in a bare checkout — `FsggKitCheckSkillView` (ADR-0067 §8),
+  #      preceded by the receiver's own generate target. A fresh clone never carries a view root, so
+  #      this exercises the exact path a developer machine and the kit-materialize runner both take.
+  #   2. the runtime root SET is still ADR-0011's two — `tests/composition/skill-view-roots.sh`.
+  #      Nothing else can see a root leave the contract: coordination-coherence reads only
+  #      <FsggKitSkillRoots>, and FsggKitCheckSkillView reports "nothing to assert" when
+  #      <FsggKitViewSkillRoots> is empty. Both measured green on a mutated tree before this job
+  #      existed; that silent pair is what ADR-0067 §8 forbids trading a loud failure for.
+  #
+  # `gate` is NOT a required status check — FS-GG/FS.GG.Net's `main` carries no branch protection and
+  # no rulesets at all (FS-GG/.github#1714). This job fails loudly; it does not block a merge. That is
+  # #1714's subject to decide, not this job's to work around.
+  composition:
+    name: Composition (runtime skill roots)
+    runs-on: ubuntu-latest
+    if: github.repository == 'FS-GG/FS.GG.Net'
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Generate the view and assert it is visible
+        run: dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitCheckSkillView
+      - name: Assert the runtime skill-root set is ADR-0011's two
+        run: bash tests/composition/skill-view-roots.sh
+
   # Cross-repo contract-coherence gate. The authority workflow validates the org registry and its
   # declared FS.GG.Contracts package pin. Net is not a build-config receiver, so that leg has no
   # subject here; packages: read lets the shared gate restore its typed validator from the org feed.

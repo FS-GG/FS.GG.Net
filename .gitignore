@@ -13,3 +13,10 @@ TestResults/
 
 # OS
 .DS_Store
+
+# ADR-0067 §9 phase 4 (FS-GG/.github#1721): `.agents/skills` is a generated VIEW of `.claude/skills`,
+# not a second committed copy of it. `scripts/skill-view generate` produces it at checkout, driven by
+# the FsggNetGenerateSkillView target in .config/kit/FS.GG.Kit.receiver.proj. It is deliberately NOT
+# committed: a committed symlink checks out as a plain text file under `git -c core.symlinks=false`
+# and both agent runtimes then load zero skills and exit 0 with no diagnostic (ADR-0067 §6).
+/.agents/skills

@@ -17,7 +17,7 @@
       "fs.gg.net.websocket": {
         "type": "Project",
         "dependencies": {
-          "FS.GG.Net.Core": "[0.1.0, )",
+          "FS.GG.Net.Core": "[0.5.0, )",
           "FSharp.Core": "[10.1.301, )"
         }
       }

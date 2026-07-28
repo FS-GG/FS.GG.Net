@@ -237,3 +237,5 @@ auth, TLS, deployment, orchestration — which belongs to the application host.
 - [`docs/architecture.md`](https://github.com/FS-GG/.github/blob/main/docs/architecture.md) and the [platform vocabulary (ADR-0020)](https://github.com/FS-GG/.github/blob/main/docs/adr/0020-platform-workspace-component-vocabulary.md) — how the whole platform fits together.
 
 [adr-0039]: https://github.com/FS-GG/.github/blob/main/docs/adr/0039-nuget-org-is-the-read-path.md
+
+<!-- .github#1815 measurement: a receiver-authored file riding the pin change -> mechanical + repair (exit 4). -->

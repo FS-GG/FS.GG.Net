@@ -8,17 +8,43 @@
     and MATERIALIZES that kit onto disk from its pin, skipping the byte-copy step entirely. A hub
     change reaches this repo as an ordinary Renovate bump of the pin (in Directory.Packages.props), and
     `kit-materialize.yml` re-runs the materialize on that PR — the same shape lockfile-sync uses for
-    packages.lock.json.
+    packages.lock.json. That is the DESIGN; what actually happens here is the by-hand caveat below.
 
     This project exists ONLY to reference the package and drive its materialize. It compiles nothing and
     is deliberately NOT in FS.GG.Net.slnx, so the normal build never touches it. Materialize explicitly:
 
         dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitMaterialize
 
-    The materialized files (skills, scripts/fsgg-coord, .config/dotnet-tools.json) are COMMITTED: the
+    The materialized files (the coordination skills and `scripts/fsgg-coord`) are COMMITTED: the
     materialize is the write arm that replaces the byte-copy, not a live per-build input, so it does NOT
     run on every build (FsggKitMaterializeOnBuild=false, per the .github#1280 review). The committed bytes
     are content-addressed and byte-identical to canonical, so `coordination-coherence` stays green.
+
+    `.config/dotnet-tools.json` IS NOT ON THAT LIST — IT IS THIS REPO'S OWN FILE. Since FS.GG.Kit 0.18.0
+    (FS-GG/.github#1615, ADR-0068) `dist/dotnet/.config/dotnet-tools.json` is no longer a `kit:` row and
+    the materialize contract lost a member, 9 -> 8. Nothing was lost: the manifest is tracked here, so
+    the kit merely stopped OVERWRITING a file this repo now owns outright. The reason it left is that
+    the kit is CONTENT-ADDRESSED — bumping `fs.gg.coord.cli` by one integer edited kit content, staling
+    `registry/repos.lock` and obliging a republish plus a seven-receiver fan-out, so four of the nine kit
+    republishes on 2026-07-27/28 went through that one row and not one of the nine touched a skill.
+    Delivery moved to Renovate's nuget manager, which already reads `dotnet-tools.json` natively.
+
+    ...AND THAT DELIVERY ARM IS DEAD HERE, WHICH IS THE SENTENCE TO READ. The org preset disables BOTH
+    `.config/dotnet-tools.json` and `Directory.Packages.props` for every repo except FS-GG/.github
+    (.github#1552; the full argument is in .github/renovate.json, and above the pin in
+    Directory.Packages.props). No Renovate PR is ever proposed for either file, so BOTH of this repo's
+    pins — the FS.GG.Kit pin AND the `fs.gg.coord.cli` engine pin — MOVE ONLY BY HAND until #1552 lands.
+    ADR-0068 handed the engine bump to Renovate; FS.GG.Net does not receive it, and the freeze is silent
+    the same way #1552's is: a bump nobody proposes is not an error and reds no check.
+
+    Deleting the manifest, though, IS caught centrally rather than silently. FS-GG/.github's `repos-audit`
+    engine-manifest sweep runs DAILY over every `receives: coordination-kit` repo — not just the
+    `kit-delivery: package` ones — reads that repo's OWN `.config/dotnet-tools.json`, and reds if it does
+    not declare `fs.gg.coord.cli`. That sweep is the assertion that REPLACED #1077's by-construction
+    "receives the tool => can run the tool" invariant, which held only while the shim and the manifest
+    rode one fabric. It grades DECLARATION, not version — deliberately, since grading the version would
+    red the whole fleet the day the engine ships. So the engine going stale here is precisely the failure
+    mode nothing will report.
 
     This repo does NOT `receive: build-config` (it hand-authors its own Directory.Build.props /
     Directory.Packages.props, like audio/templates), so FsggKitMaterializeBuildConfig stays off (its

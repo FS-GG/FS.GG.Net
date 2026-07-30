@@ -113,3 +113,5 @@ surface) is tracked there and lands via the SDD-first schema-growth sequence
 ([SDD#589](https://github.com/FS-GG/FS.GG.SDD/issues/589)).
 
 [adr-0039]: https://github.com/FS-GG/.github/blob/main/docs/adr/0039-nuget-org-is-the-read-path.md
+
+<!-- Temporary receiver-run probe for FS-GG/.github#1787; never merge. -->

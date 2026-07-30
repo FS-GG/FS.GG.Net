@@ -10,11 +10,11 @@
       },
       "protobuf-net": {
         "type": "Direct",
-        "requested": "[3.2.45, )",
-        "resolved": "3.2.45",
-        "contentHash": "5UZ/ukUHcGbFSl7vNMrHsfjqdxusdd9w7w0fCEXzf3UUtsrGNVCzV5SmF+sCHAbnRV2qPcD1ixiDP7Aj8lX/HA==",
+        "requested": "[3.2.56, )",
+        "resolved": "3.2.56",
+        "contentHash": "4IPJeTYAMNewlN8MDaFkcmR/9hLhJeo9eARnTh104zh7mf+vXT2gu5MUfUnkSQU+CH578Q6vcdU7LQDQPG6eaw==",
         "dependencies": {
-          "protobuf-net.Core": "3.2.45"
+          "protobuf-net.Core": "3.2.56"
         }
       },
       "protobuf-net.Grpc": {
@@ -58,8 +58,8 @@
       },
       "protobuf-net.Core": {
         "type": "Transitive",
-        "resolved": "3.2.45",
-        "contentHash": "PMWatW2NrT1uTXD7etJ4VdQ0wWZLFrIfdRGppD2QX7nzZ0+kIzqhq551u6ZiXJHWJgG4hWFEkSnUnt2aB6posg=="
+        "resolved": "3.2.56",
+        "contentHash": "d6QOukTpDzs7zZv9tPnBZMtvHDNeHJQXUhMx54g4urUQsXK3oo9U70H9HvklYq7hlQ4A7AHJl7EVEqyCXXIl8Q=="
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",

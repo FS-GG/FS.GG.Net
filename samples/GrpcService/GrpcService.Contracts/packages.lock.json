@@ -19,11 +19,11 @@
       },
       "protobuf-net.Grpc": {
         "type": "Direct",
-        "requested": "[1.1.1, )",
-        "resolved": "1.1.1",
-        "contentHash": "uThFb/iUplzuXEa/cztJaNGpKLRQRb515STtQX99IS1MKh8Qsunw6MjjU+9rjo8s9UymR6lN9Ab6xT3adBlyDg==",
+        "requested": "[1.2.2, )",
+        "resolved": "1.2.2",
+        "contentHash": "ywpDWMKewrojQQyAKicELuTuaH+heEQfcuB+aJdENN9OfNOIuWLnwLdnHOzJ1162hD/1trzYDFMV5g8vmTxJTQ==",
         "dependencies": {
-          "Grpc.Core.Api": "2.51.0",
+          "Grpc.Core.Api": "2.66.0",
           "protobuf-net": "2.4.8"
         }
       },
@@ -48,8 +48,8 @@
       },
       "Grpc.Core.Api": {
         "type": "Transitive",
-        "resolved": "2.51.0",
-        "contentHash": "WUYCnxZKfdBWCKNs08lWFRoTjESt3iyFDthsZu5KcWguZ4OnnXrTu/K5mIdO+R9dUhuw5Xm1ygUrI1e2q8d1YA=="
+        "resolved": "2.66.0",
+        "contentHash": "HsjsQVAHe4hqP4t4rpUnmq+MZvPdyrlPsWF4T5fbMvyP3o/lMV+KVJfDlaNH8+v0aGQTVT3EsDFufbhaWb52cw=="
       },
       "Microsoft.Extensions.ObjectPool": {
         "type": "Transitive",

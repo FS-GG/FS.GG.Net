@@ -20,11 +20,11 @@
       },
       "protobuf-net.Grpc": {
         "type": "Direct",
-        "requested": "[1.1.1, )",
-        "resolved": "1.1.1",
-        "contentHash": "uThFb/iUplzuXEa/cztJaNGpKLRQRb515STtQX99IS1MKh8Qsunw6MjjU+9rjo8s9UymR6lN9Ab6xT3adBlyDg==",
+        "requested": "[1.2.2, )",
+        "resolved": "1.2.2",
+        "contentHash": "ywpDWMKewrojQQyAKicELuTuaH+heEQfcuB+aJdENN9OfNOIuWLnwLdnHOzJ1162hD/1trzYDFMV5g8vmTxJTQ==",
         "dependencies": {
-          "Grpc.Core.Api": "2.51.0",
+          "Grpc.Core.Api": "2.66.0",
           "protobuf-net": "2.4.8"
         }
       },

@@ -10,9 +10,9 @@
       },
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.29.3, )",
-        "resolved": "3.29.3",
-        "contentHash": "t7nZFFUFwigCwZ+nIXHDLweXvwIpsOXi+P7J7smPT/QjI3EKxnCzTQOhBqyEh6XEzc/pNH+bCFOOSjatrPt6Tw=="
+        "requested": "[3.35.1, )",
+        "resolved": "3.35.1",
+        "contentHash": "pxtkuXhR8svkvDTQrYew9GZQt6eWhblz/V/WKUFrQgkHYlQPsumJTeF6ppHRJpe6j9ffukkd5lQULiiKaek4xA=="
       },
       "protobuf-net.Core": {
         "type": "Transitive",
@@ -30,7 +30,7 @@
         "dependencies": {
           "FS.GG.Net.Core": "[0.5.0, )",
           "FSharp.Core": "[10.1.301, )",
-          "Google.Protobuf": "[3.29.3, )",
+          "Google.Protobuf": "[3.35.1, )",
           "protobuf-net": "[3.2.45, )",
           "protobuf-net-fsharp": "[0.1.0, )"
         }
@@ -45,7 +45,7 @@
       "sc2.protocol": {
         "type": "Project",
         "dependencies": {
-          "Google.Protobuf": "[3.29.3, )"
+          "Google.Protobuf": "[3.35.1, )"
         }
       },
       "protobuf-net": {

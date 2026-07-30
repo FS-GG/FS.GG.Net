@@ -20,7 +20,7 @@
 
     <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).
          FS.GG.Net.Core depends on FSharp.Core ALONE. -->
-    <PackageVersion Include="FSharp.Core" Version="10.1.301" />
+    <PackageVersion Include="FSharp.Core" Version="10.1.302" />
 
     <!-- Serialization: FS.GG.Net.Protobuf. Google.Protobuf is the reproducible raw-bytes path
          (ToByteArray / MessageParser) that SC2-over-WebSocket needs (ADR-0052 §4). protobuf-net +

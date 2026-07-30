@@ -76,11 +76,18 @@ jobs:
       #     whether a view root had been re-committed — was ADOPTED INTO the kit and now runs for
       #     every receiver, not just this one;
       #   * it had NO view-resolution lane at all, so a dangling `.agents/skills`, a plain text file
-      #     where the directory belongs, and a partial view were unobserved here. All three red now.
+      #     where the directory belongs, and a partial view were unobserved here. The receiver now
+      #     repairs the first two before the assertion and fails loudly on the third.
       #
-      # ABSENCE IS RED HERE, AND THAT NEEDS NO CARVE-OUT. The step below runs the generate first, so
-      # by the time `check` runs the view MUST exist — `--absent-ok` is deliberately NOT passed.
-      # That is the stronger of the two postures the fleet uses, and this job earns it by generating.
+      # WHAT THIS PER-PR PATH GRADES. `FsggNetGenerateSkillView` runs unconditionally before
+      # `FsggKitCheckSkillView`, because the declared view root is absent in every bare checkout.
+      # Therefore `[absent-root]` and `[dangling-root]` are repaired before the assertion and cannot
+      # be its verdict. A `[text-file-root]` also does not reach the assertion: `skill-view generate`
+      # refuses to replace that unowned file, so this build reds at generation. The assertion here
+      # grades successful declared generation and source/view completeness; it does NOT mutation-
+      # demonstrate those three §8 absence-class verdicts. FS.GG.Kit's `verify-package.sh` is the
+      # no-generate fixture path that mutation-proves them. Keep `FsggNetGenerateSkillView`
+      # unconditional and declaration-authorised: it is required to make this receiver path work.
       - name: Generate the view and assert it is visible
         run: dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitCheckSkillView
       - name: The runtime skill-root alarm can fire (every lane, mutation-tested demo)

@@ -29,13 +29,12 @@
     republishes on 2026-07-27/28 went through that one row and not one of the nine touched a skill.
     Delivery moved to Renovate's nuget manager, which already reads `dotnet-tools.json` natively.
 
-    ...AND THAT DELIVERY ARM IS DEAD HERE, WHICH IS THE SENTENCE TO READ. The org preset disables BOTH
-    `.config/dotnet-tools.json` and `Directory.Packages.props` for every repo except FS-GG/.github
-    (.github#1552; the full argument is in .github/renovate.json, and above the pin in
-    Directory.Packages.props). No Renovate PR is ever proposed for either file, so BOTH of this repo's
-    pins — the FS.GG.Kit pin AND the `fs.gg.coord.cli` engine pin — MOVE ONLY BY HAND until #1552 lands.
-    ADR-0068 handed the engine bump to Renovate; FS.GG.Net does not receive it, and the freeze is silent
-    the same way #1552's is: a bump nobody proposes is not an error and reds no check.
+    THIS REPO OWNS BOTH ROOT PIN FILES, AND RENOVATE DELIVERS BOTH PINS. FS.GG.Net hand-authors
+    `Directory.Packages.props`, so it is outside the build-config receiver rule that disables that file;
+    the shared preset therefore manages its FS.GG.Kit pin (.github#1552). ADR-0068 made this repo's
+    `.config/dotnet-tools.json` an owned manifest and assigned its `fs.gg.coord.cli` pin to Renovate;
+    #1798 removed the now-stale manifest disable rule. The live Dependency Dashboard (FS.GG.Net#36)
+    lists both files under the NuGet manager and offers both updates, which is the delivery path to use.
 
     Deleting the manifest, though, IS caught centrally rather than silently. FS-GG/.github's `repos-audit`
     engine-manifest sweep runs DAILY over every `receives: coordination-kit` repo — not just the

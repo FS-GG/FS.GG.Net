@@ -7,15 +7,24 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- The coordination kit as a versioned package (ADR-0062, .github#1262 / .github#1291).
-         Referenced by .config/kit/FS.GG.Kit.receiver.proj, which materializes the kit onto disk;
-         Renovate is MEANT to bump this pin, with kit-materialize.yml refreshing the committed kit on
-         that PR. That arm is currently DEAD here (.github#1552): the org preset disables this whole
-         FILE for every repo but FS-GG/.github, so no FS.GG.Kit PR is ever proposed for FS.GG.Net, and
-         kit-materialize.yml — gated to renovate/* branches — never fires for its primary trigger.
-         Until #1552 lands this pin must be bumped BY HAND and the materialize run explicitly:
+         Referenced by .config/kit/FS.GG.Kit.receiver.proj, which materializes the kit onto disk.
+         Renovate bumps this pin, and kit-materialize.yml refreshes the committed kit on that PR
+         (renovate/* branch gate). Checkable, not just asserted: FS-GG/.github's default.json has
+         exactly one packageRule disabling this FILE (matchFileNames: Directory.Build.props,
+         Directory.Packages.props), and it is a positive allow-list of the four build-config
+         RECEIVERS — matchRepositories: FS.GG.Game, FS.GG.Governance, FS.GG.Rendering, FS.GG.SDD
+         (.github#1552). FS.GG.Net is not on that list, so the file is Renovate-enabled here.
+         Demonstrated live, not just configured: PR #42 (renovate/fs.gg.kit-0.x) bumped this pin to
+         0.15.0 and merged with fs-gg-cross-repo-dispatch[bot]'s `chore: materialize FS.GG.Kit`
+         commit already pushed onto the same branch (2026-07-28) — the end-to-end path has run and
+         merged, not merely been wired.
+         FALLBACK ONLY — use when a bump must be sequenced by hand (e.g. ahead of or independent from
+         a specific Renovate PR) and check first that a `renovate/fs.gg.kit-*` branch isn't already
+         carrying the same bump before pre-empting it:
              dotnet build .config/kit/FS.GG.Kit.receiver.proj -t:FsggKitMaterialize
-         Skipping that is what red-lit `coordination-coherence` on main (#37). Do NOT re-enable the
-         file with a local Renovate rule — that is a second dialect (.github#850); land #1552. -->
+         Skipping that step on a hand bump is what red-lit `coordination-coherence` on main (#37).
+         Do NOT add a local Renovate override for this file; the org preset already treats it as
+         enabled here (.github#1552). -->
     <PackageVersion Include="FS.GG.Kit" Version="0.18.0" />
 
     <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).

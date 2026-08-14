@@ -34,9 +34,9 @@ The scheduler asks, in order: is the issue closed? is its Status one we hand out
 
 #### A MERGED blocker is RESOLVED; an unreadable one BLOCKS
 
-`Blocked by` clears on CLOSED **or MERGED**. It does not clear on OPEN, on a blocker whose state could not be read (unverifiable), or on prose that is not an issue ref at all (unparseable) — all three BLOCK.
+`Blocked by` is a Projects v2 board FIELD, not a body line — the same medium split as `Paths:` and its own fence rule, in reverse: `Paths:` lives in the body and a `Blocked by` FIELD is the only place this dependency is recorded. A `Blocked by:` line written into the issue BODY is inert: nothing that clears a blocker reads the body, so it looks like a declaration and does nothing. Write the edge with `set-field <ref> "Blocked by" <ref>`. Once the edge is on the field: `Blocked by` clears on CLOSED **or MERGED**. It does not clear on OPEN, on a blocker whose state could not be read (unverifiable), or on prose that is not an issue ref at all (unparseable) — all three BLOCK.
 
-> **Why:** #476: `Blocked by` may name a PULL REQUEST, whose state is OPEN | CLOSED | MERGED. A rule clearing only on CLOSED unblocks when the blocking work is ABANDONED and blocks forever once it is FINISHED — the gate opened precisely when the work was thrown away and shut precisely when it was done. And #266/#421: "I could not look" is not "I looked and it is fine"; prose in a dependency field is not permission.
+> **Why:** #476: `Blocked by` may name a PULL REQUEST, whose state is OPEN | CLOSED | MERGED. A rule clearing only on CLOSED unblocks when the blocking work is ABANDONED and blocks forever once it is FINISHED — the gate opened precisely when the work was thrown away and shut precisely when it was done. And #266/#421: "I could not look" is not "I looked and it is fine"; prose in a dependency field is not permission. And .github#1933: two agents independently read a `Blocked by:` BODY line, found no FIELD edge, and concluded there was none — one filed a false defect (.github#1931) and withheld from promoting a row only because a third worker caught the contradiction by hand. Nothing in the operator-facing docs said which medium held the fact; only the `.fsi` comments did, and filers do not open those.
 
 #### The claim lock is a comment-order CAS, and the ASSIGNEE cannot hold it
 
@@ -66,6 +66,7 @@ an unreachable answer is not a negative one.
 - **`wrong-status`** — Its board Status is not one a scheduler hands out (or it has none at all, which makes it invisible to every scheduler and is a bug, not a decision).
 - **`blocked-by`** — A `Blocked by` entry is unresolved. CLOSED and MERGED resolve; OPEN, unverifiable and unparseable all BLOCK.
 - **`awaiting-human`** — `Blocked on: human/...` — a HUMAN must act first, whatever the `Paths:` line records, so an agent cannot make the call the item exists to escalate (#918). `human/decision` is unschedulable until a human CHOOSES; `human/action` becomes startable the moment a human action (e.g. a scope grant) lands, but not before. Which one rides on the verdict's `humanBlock` detail.
+- **`awaiting-delivery-route-decision`** — The mandatory agent-authored delivery-route receipt is missing, stale, malformed, or unreadable. Re-evaluate the item; the engine never infers a route from checklist facts.
 - **`no-touch-set`** — No `Paths:` line at all — an OMISSION. The item is real work and it is invisible to every worker who asks for work. Declare one, or `Paths: none` if it truly has no touch-set.
 - **`deliberately-no-touch-set`** — `Paths: none` — a decision somebody made. An epic, a decision item, an investigation whose scope IS the question. Unschedulable BY DESIGN, and correct.
 - **`unusable-touch-set`** — The declaration contains token(s) that can match no file, so they reserve NOTHING — and files nobody reserved are invisible to every other worker's overlap check.

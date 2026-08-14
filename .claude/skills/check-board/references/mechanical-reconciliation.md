@@ -1,12 +1,22 @@
 # Mechanical reconciliation
 
 `scripts/fsgg-coord reconcile` owns classification. Do not recreate its finding table with `jq`.
-The five typed chores are stale-claim collection, claim/Status lag, closed issue/Done lag,
-cleared-blocker/Ready lag, and open-blocker/Blocked lag. `--apply` performs only those remedies.
+The six typed chores are stale-claim collection, claim/Status lag, claim/review lag, closed issue/Done
+lag, cleared-blocker/Ready lag, and open-blocker/Blocked lag. `--apply` performs only those remedies.
 
 Use `--repo NAME` to narrow the reported and applied subjects; omit it for the org-wide pass.
 Use `--json` when another tool consumes the dry-run result. Apply after inspecting that result;
 `--apply` is deliberately human-readable so mutation output cannot corrupt a JSON document.
+
+## Executable receipt examples
+
+These offline probes are bounded and make no board writes. The positive receipt proves both intended
+values were freshly observed. The partial receipt proves a failed comparison retains both actual
+values, including the stale dependency. The missing-row receipt proves no observation is invented.
+
+```bash
+bash .agents/skills/check-board/references/receipt-examples.sh
+```
 
 <!-- BEGIN GENERATED: fsgg-protocol:reconcile-rules -->
 <!--
@@ -29,7 +39,7 @@ Declare the touch-set as a `Paths:` line at up to three leading spaces. A `Paths
 
 **A MERGED blocker is RESOLVED; an unreadable one BLOCKS**
 
-`Blocked by` clears on CLOSED **or MERGED**. It does not clear on OPEN, on a blocker whose state could not be read (unverifiable), or on prose that is not an issue ref at all (unparseable) — all three BLOCK.
+`Blocked by` is a Projects v2 board FIELD, not a body line — the same medium split as `Paths:` and its own fence rule, in reverse: `Paths:` lives in the body and a `Blocked by` FIELD is the only place this dependency is recorded. A `Blocked by:` line written into the issue BODY is inert: nothing that clears a blocker reads the body, so it looks like a declaration and does nothing. Write the edge with `set-field <ref> "Blocked by" <ref>`. Once the edge is on the field: `Blocked by` clears on CLOSED **or MERGED**. It does not clear on OPEN, on a blocker whose state could not be read (unverifiable), or on prose that is not an issue ref at all (unparseable) — all three BLOCK.
 
 **A read that did not happen may never render as a confident answer**
 

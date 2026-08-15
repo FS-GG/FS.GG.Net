@@ -166,20 +166,54 @@ Every line of that has a reason, and skipping one costs the thing it protects:
 - **The rebuild names `$SHARED` explicitly.** A bare `dotnet build src/FS.GG.Coord.Cli -c Release`
   rebuilds *your* worktree — never the stale tree — and leaves the refusal exactly where it was.
 
-**If you cannot touch the shared checkout, that is an answer, not a failure — escalate and stop.**
-Some hosts isolate a worker to its worktree and *refuse* its git operations against the shared
-checkout outright (measured on this host: `git -C <shared> …` is rejected before it runs). You then
-cannot carry out the repair, and the honest move is to report it to whoever dispatched you and stop
-**before** spending the lease on a `take` the guard will refuse — not to work the item and discover it
-at `done`.
+**If you cannot touch the shared checkout, there is a SECOND repair, and it is the one a
+worktree-isolated worker can actually run.** Some hosts isolate a worker to its worktree and *refuse*
+its git operations against the shared checkout outright (measured on this host: `git -C <shared> …` is
+rejected before it runs). The remedy the guard prints names only that checkout, so a reader who takes
+it literally concludes they are stuck. They are not:
+
+```sh
+git rebase origin/main                        # or `git merge --ff-only origin/main`
+dotnet build src/FS.GG.Coord.Cli -c Release   # YOUR worktree — no -C, no $SHARED
+```
+
+**Why this works is the resolver's tier order, not a trick.** `scripts/fsgg-coord` tries **tier 2a**
+— a source build under the *caller's own* toplevel — **before** tier 2b, the shared checkout's build,
+and it is emphatic that the order is deliberate: *"AFTER 2a, NEVER BEFORE IT. A worker who builds in
+their own worktree gets THEIR build."* Both tiers then call `guards` with **the toplevel they
+resolved**, so once your worktree has a `bin/`, `stale_guard` measures *your* tree — current by
+construction if you rebased — and the refusal lifts. It is not a bypass: the engine that executes
+really is the current code, which is the only thing the guard was ever protecting.
+
+Two conditions, and both are load-bearing:
+
+- **Rebase FIRST.** Tier 2a measures your tree against `origin/main`, so building a worktree that is
+  itself behind buys a green guard over a stale engine — the exact fail-open the guard exists to
+  prevent. `git rebase origin/main` before `dotnet build`, in that order.
+- **You now run YOUR build, including any `src/` edits you are carrying.** That is the kit author's
+  intended workflow, and it is why tier 2a outranks 2b. If your item edits `src/FS.GG.Coord.*`, the
+  engine executing your board writes is the code you are editing — usually what you want, occasionally
+  not, and never a surprise you should meet at `done`.
+
+Two workers found this independently mid-item (`snipe-e1d5` on `.github#1597`, `snipe-5326` on
+`.github#1635`) and one reported it as a finding rather than a fix, which is why it is written here
+rather than rediscovered a third time (`.github#1689`).
+
+**Only when neither repair is available is stopping the answer** — report it to whoever dispatched you
+and stop **before** spending the lease on a `take` the guard will refuse, not at `done`.
 
 **You own the check; the repair belongs to whoever owns the shared checkout.** It is a mutation of a
 tree N workers share, and the actor that *creates* the drift is the one merging their PRs — so the
 refresh belongs with whoever dispatched the wave, which is also the only actor that can serialise it.
-That ownership is filed as `.github#1663` and is **not** in place yet, which is precisely why the rule
-above is a floor rather than a division of labour: check every time, because whether anyone else did
-is not something you can observe from here. And note `.github#1664` — `stale_guard`'s own printed
-remedy still says `pull --ff-only`, which is why this recipe does not.
+That ownership was filed as `.github#1663` and **landed** — `drive-board` §1 now brings the shared
+checkout's engine current before it fans out. The rule above stays a floor rather than a division of
+labour, and for the reason that has not changed: check every time, because whether the host actually
+did it is not something you can observe from here.
+
+`.github#1664` also landed: `stale_guard`'s printed remedy now says `merge --ff-only` (see
+`scripts/fsgg-coord-guards.sh`, *"THE REMEDY IS `merge --ff-only`, NOT `pull --ff-only`"*), so this
+recipe and the message agree. What the message still does **not** carry is the tier 2a branch above —
+it names only the shared checkout — which is why that branch is written out here in full.
 
 ```sh
 scripts/fsgg-coord take --repo <r>     # pick + claim the next SCHEDULABLE item, retrying a lost race
@@ -912,8 +946,29 @@ gh api -X POST repos/FS-GG/<repo>/pulls \
   -f body="$(git log -1 --format=%b)" \
   -f head="item/<n>-<slug>" -f base=main --jq '"PR #\(.number)  \(.html_url)"'
 
-scripts/fsgg-coord verify-paths --pr <pr>    # did the PR stay inside its declaration?
+scripts/fsgg-coord verify-paths --pr <pr>    # did the PR stay inside its declaration? AND: does the
+                                              # body's own closing keyword actually link (.github#2107)?
 ```
+
+> **Write `Closes #<n>`, NEVER `Closes <repo>#<n>` — the board's own shorthand is not GitHub's grammar
+> (.github#2107).**
+>
+> Every recipe in this skill, `take`/`claim`/`widen`/`Blocked by`, every issue body — the canonical way
+> to name work here is `<repo>#<n>`, e.g. `.github#2095`. That habit is correct EVERYWHERE except one
+> place: a closing keyword in a PR body targeting the *same* repo. There, GitHub wants a **bare
+> `#2095`**, or `owner/repo#2095` for a **cross-repo** link — `.github#2095` is neither, and GitHub
+> renders it as plain text with **no warning**. The PR looks correct to a reader, `closingIssuesReferences`
+> stays empty, and the merge never closes the issue.
+>
+> Confirmed twice within an hour of each other on live board work: `Closes .github#2095` (PR #2099) and
+> `Closes .github#2098` (PR #2103) both merged with their issue left OPEN. Both needed a **manual**
+> `gh issue close` — editing a merged PR's body does not replay the close, the same unrecoverable
+> shape as the box above.
+>
+> `verify-paths` now reads the PR's own body and prints `FSGG-CLOSES DEFECT` — naming the exact match
+> and both corrected forms — the moment you run it after opening the PR, which is the one moment fixing
+> it is still free. Do not wait for `done` to refuse with "the issue is still OPEN"; that is the same
+> defect, found late.
 
 > **Put `Closes #<n>` in the commit BODY, never in the subject — and know why.**
 >
@@ -1008,8 +1063,10 @@ of you:
   that is not this item's work. Answer it before merge.
 - **`regenerated (expected):`** — **not** a finding, and nothing to explain. A generated, CI-gated
   artifact §1 told you not to declare, which `verify-paths` subtracted by asking the generators
-  themselves what they emit ([ADR-0044](../../../../docs/adr/0044-generated-artifacts-are-derived-from-their-generators.md),
-  [#498](https://github.com/FS-GG/.github/issues/498)).
+  themselves what they emit ([ADR-0044](https://github.com/FS-GG/.github/blob/main/docs/adr/0044-generated-artifacts-are-derived-from-their-generators.md),
+  [#498](https://github.com/FS-GG/.github/issues/498)). (ADR-0044 is an absolute URL, not a
+  relative link: `docs/adr/` is not part of the `kit:` transport `registry/repos.yml` declares, so
+  a receiver never materializes it and a relative link here would dangle. .github#2343.)
 
 > **This used to be one undifferentiated list, and the recipe's answer was to make the WORKER sort
 > it** — *"name which one it is in the PR"*. That was the best available advice while the tool could
@@ -1042,7 +1099,12 @@ transition, not completion, and the live claim stays with you.
 ```sh
 # ONE COMMAND. Do NOT hand-roll this gate — see the box below for why that instruction is the whole
 # point. It polls until the verdict SETTLES and exits 0 ONLY on green.
-scripts/fsgg-coord landable <pr> --wait || exit 1
+#
+# `--require fsgg:review-accepted:v1`: asserted HERE, immediately before merge, because this is the
+# point after which the host's exact-SHA review-acceptance marker (§5, `independent-review.md`) is
+# expected to already exist. Its absence downgrades an otherwise-green verdict to PENDING (7) rather
+# than merging past a chain nobody accepted (.github#2360, closed loop: .github#2425).
+scripts/fsgg-coord landable <pr> --wait --require fsgg:review-accepted:v1 || exit 1
 
 # MERGE over REST. This is the DEFAULT here, not a rate-limit workaround (#564) — see below.
 # `<pr>` is the PULL number; `<n>` is the ITEM/issue number. They are NOT the same, and this fence
@@ -1405,9 +1467,11 @@ jq -n --arg t "<title>" --rawfile b pr-body.md \
 
 # WATCH the checks  (gh pr checks is GraphQL)
 # Nothing changes here on an exhausted budget: `landable` is REST all the way down, so it is the same
-# one command as §5. This section used to carry a SECOND, hand-copied transcription of the gate — the
-# structural reason it kept rotting (#724). There is now nothing to keep in step.
-scripts/fsgg-coord landable <pr> --wait
+# one command as §5, INCLUDING `--require fsgg:review-accepted:v1` — this is still the merge-time call,
+# just made under a different budget constraint. This section used to carry a SECOND, hand-copied
+# transcription of the gate — the structural reason it kept rotting (#724). There is now nothing to
+# keep in step.
+scripts/fsgg-coord landable <pr> --wait --require fsgg:review-accepted:v1
 ```
 
 `gh pr checks <pr> --watch` itself is fine in a worktree — it is GraphQL, but it reads the API and

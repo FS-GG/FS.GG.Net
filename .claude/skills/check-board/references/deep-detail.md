@@ -83,8 +83,8 @@ answering it, a dry run lists the questions; it just does not put them.
 
 ## The rules this pass enforces
 
-**These are the engine's, and they are GENERATED. So are five of the §2 finding codes below —
-`STALE-CLAIM`, `CLAIM-STATUS-LAG`, `CLOSED-ISSUE-NOT-DONE`, `BLOCKER-CLEARED` and `STATUS-NOT-BLOCKED`
+**These are the engine's, and they are GENERATED. So are six of the §2 finding codes below —
+`STALE-CLAIM`, `CLAIM-STATUS-LAG`, `CLAIM-REVIEW-LAG`, `LIFECYCLE-PROJECTION-LAG`, `CLOSED-ISSUE-NOT-DONE`, `BLOCKER-CLEARED` and `STATUS-NOT-BLOCKED`
 are `Chore.fsi`'s, each carrying its remedy AND its deference rules as a type. Read them there before
 you re-spell one here.**
 
@@ -197,6 +197,17 @@ cannot resolve stays `unknown`, which **holds** — see the table.
 
 ## 2. The findings
 
+The rows below split two authorities: chore kinds that carry a `Write` are engine-owned repair
+facts; diagnostic-only findings are this skill's own procedure. Keep the former synchronized with
+`Chore.ChoreKind.Write`; do not turn the latter into invented engine protocol.
+
+A kind whose `Write` depends on the item — `BLOCKER-CLEARED` since .github#2220 — must name **every**
+column it can produce, with the condition that selects each. This table is operator-prescriptive: §6
+step 3 is a hand-run `set-field --batch <i> Status=<V>` read straight off it, so a row naming one of
+two values has an operator performing, by hand, the exact write the engine was changed to stop making.
+`RuleSubsetTests` enumerates every case of every union a kind carries and requires each resulting value
+to appear here, so a value that reaches `Write` and not this table reds.
+
 Each finding has a code, a ground truth, and a fix — or an explicit refusal to fix.
 
 | Code | Condition | Fix (`--apply`) |
@@ -204,13 +215,19 @@ Each finding has a code, a ground truth, and a fix — or an explicit refusal to
 | `CLOSED-ISSUE-NOT-DONE` | **no live claim**, `state == CLOSED`, and `status != Done` | `set-field --batch <i> Status=Done` |
 | `DONE-STATUS-OPEN-ISSUE` | `status == Done` and `state == OPEN` | **ask** (§5) — is the work done, or was the flip premature? |
 | `OFF-BOARD-ISSUE` | open, **non-bot**, not `board:unlisted` issue in a rostered repo with no board item — see the note below, and §1's fourth read, which is the only read that can see it | `fsgg-coord add <i>` — idempotent; see the note below |
-| `BLOCKER-CLEARED` | **no live claim**, every blocker `closed` **or `merged`**, but `status == Blocked` | `set-field --batch <i> Status=Ready` |
+| `BLOCKER-CLEARED` | **no live claim**, every blocker `closed` **or `merged`**, registry predicate `Agree`, no `Blocked on: human/...` sentinel, but `status == Blocked` | `set-field --batch <i> Status=Ready` — **but `set-field --batch <i> Status=Backlog`** when the body declares `Paths: none`, or declares no touch-set line at all. Both are unschedulable, so `Ready` would advertise a row no scheduler can ever admit and the lane is unfillable forever (.github#2220) |
 | `BLOCKER-UNKNOWN` | a blocker ref `scan` could not resolve | resolve over REST (§3), then board the blocker if it is open |
 | `BLOCKER-UNPARSEABLE` | a `Blocked by` token is not an issue ref | **ask** (§5) — what did the prose mean? `Blocked by` is text, so the answer can be written |
 | `STATUS-NOT-BLOCKED` | **no live claim**, an open blocker, but `status` is `Ready`/`Backlog` | `set-field --batch <i> Status=Blocked` |
+| `CLASS-PROJECTION-LAG` | declared issue class differs from the board projection | `set-field --batch <i> Class=<declared>` |
 | `STALE-CLAIM` | `who` says `state == "stale"` | `reap --repo <r> --apply` |
 | `UNCLAIMED-IN-PROGRESS` | `who` says `state == "unclaimed"` | **ask** (§5) — someone is working outside the protocol; only a human knows who, and whether to park it |
+| `UNDETERMINED-IN-PROGRESS` | `who` says `state == "undetermined"` | **report only** — incomplete read never licenses a write |
+| `CONSOLIDATION-CANDIDATE` | `lint` found overlapping open work | **report only** — the lint runner decides whether to consolidate; never automatic |
+| `CONSOLIDATION-UNREADABLE` | `lint` could not read a candidate body | **error** — no complete board read means no verdict |
 | `CLAIM-STATUS-LAG` | held claim, and board `status` is one of `Ready`/`Backlog`/*(no status)* — the columns a claim SHOULD have overwritten. A held `Blocked`/`In review` is the holder's own decision and is **deferred, not reconciled** (#331) | `set-field --batch <i> "Status=In progress"` |
+| `CLAIM-REVIEW-LAG` | held claim, a freshly observed item PR is open, and board `status != In review` | `set-field --batch <i> "Status=In review"` |
+| `LIFECYCLE-PROJECTION-LAG` | a fresh complete lifecycle observation disagrees with Project Status and no legacy Chore owns that Status write | `set-field --batch <i> Status=Ready/Backlog/In progress/Blocked/In review/Done` |
 | `AUTO-DONE-LIVE-CLAIM` | held claim and board `status == Done` — merge/issue-close automation may have projected completion while the holder still owes release, publication, dispatch, or deployment verification | **report and message the holder; never count terminal** — the holder reopens the issue and freshly restores `In review`, or produces the exact green `FSGG-DONE` evidence and drops the claim |
 | `UNDECLARED-PATHS` | open, unclaimed, not `Done`, and the issue body declares no `Paths:` | **ask** (§5) — the fix is an *issue* edit, so it takes an answer |
 | `ON-BOARD-NO-STATUS` | open, **unclaimed**, on the board, with an empty `Status` column (`""` — `NoStatus`) | **report only** — a human must choose `Ready` vs `Backlog`; the reconciler cannot invent the missing fact (§5's *never guess*), so it names the drift and writes **nothing** |
@@ -390,8 +407,8 @@ that is where you are standing, this class is report-only until then — say so 
 for the raw call, which the gate will refuse anyway and which is unmetered for a reason.
 
 **`add` is idempotent, and it is safe to `--apply` — but not because adding twice is harmless.**
-Adding an already-boarded issue is a **no-op**: it prints the existing item id and exits 0, with no
-twin created (`addProjectV2ItemById` is idempotent server-side — measured on the live board in
+Adding an already-boarded issue creates no twin and does not touch a row that already has a column;
+when the row has no column it writes `Status = Backlog`. (`addProjectV2ItemById` is idempotent server-side — measured on the live board in
 `#870`, not inferred). If you have read this skill before, note the correction: it used to say a
 second add **creates a duplicate**. That was `#421`'s *counterfactual* — "a duplicate would have been
 created had I followed that remediation" — hardening into an assertion as it was copied inward, and

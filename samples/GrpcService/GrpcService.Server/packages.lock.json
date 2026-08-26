@@ -4,9 +4,9 @@
     "net10.0": {
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[10.1.301, )",
-        "resolved": "10.1.301",
-        "contentHash": "excLf2zM/qUB3WhRUfI0xvOOaPwcRAEdYT/BXe9eiTKySnWVuIKMQTf5+6ETy5nsb1dpLp1s2j2yAM/XcRgFMg=="
+        "requested": "[10.1.400, )",
+        "resolved": "10.1.400",
+        "contentHash": "H9wlZ/tWgNp+Q4WQ5aUSi3XOBXrL6z+UkR0PNeyDFyoZR3c3PbtA21B9FqlthrhEwQ6f5AtQV0JLhBBDqjjscw=="
       },
       "protobuf-net.Grpc.AspNetCore": {
         "type": "Direct",
@@ -47,14 +47,14 @@
       "fs.gg.net.core": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.301, )"
+          "FSharp.Core": "[10.1.400, )"
         }
       },
       "fs.gg.net.protobuf": {
         "type": "Project",
         "dependencies": {
           "FS.GG.Net.Core": "[0.5.0, )",
-          "FSharp.Core": "[10.1.301, )",
+          "FSharp.Core": "[10.1.400, )",
           "Google.Protobuf": "[3.29.3, )",
           "protobuf-net": "[3.2.45, )",
           "protobuf-net-fsharp": "[0.1.0, )"
@@ -63,7 +63,7 @@
       "grpcservice.contracts": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.301, )",
+          "FSharp.Core": "[10.1.400, )",
           "System.ServiceModel.Primitives": "[8.1.0, )",
           "protobuf-net": "[3.2.45, )",
           "protobuf-net.Grpc": "[1.1.1, )"

@@ -4,9 +4,9 @@
     "net10.0": {
       "FSharp.Core": {
         "type": "Direct",
-        "requested": "[10.1.301, )",
-        "resolved": "10.1.301",
-        "contentHash": "excLf2zM/qUB3WhRUfI0xvOOaPwcRAEdYT/BXe9eiTKySnWVuIKMQTf5+6ETy5nsb1dpLp1s2j2yAM/XcRgFMg=="
+        "requested": "[10.1.400, )",
+        "resolved": "10.1.400",
+        "contentHash": "H9wlZ/tWgNp+Q4WQ5aUSi3XOBXrL6z+UkR0PNeyDFyoZR3c3PbtA21B9FqlthrhEwQ6f5AtQV0JLhBBDqjjscw=="
       },
       "Grpc.Net.Client": {
         "type": "Direct",
@@ -58,20 +58,20 @@
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
-        "resolved": "10.0.10",
-        "contentHash": "KG8t5RHczdgB3IWvRndpI0nE1DSo7ikDYSDbITxfgRFyIvnYiKzuPjaZOsPnwFQ1aOGUl9sEulJul9wlHLEUoA=="
+        "resolved": "10.0.11",
+        "contentHash": "8IV+rI3xN/Mkq9MsSX7VZTv9T9Wt+tyhHLwBX9VNZBk8m8kknEs1JeTSjI2x9M2L/fSja+c2WSE5n5Yy0GXdoQ=="
       },
       "fs.gg.net.core": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.301, )"
+          "FSharp.Core": "[10.1.400, )"
         }
       },
       "fs.gg.net.grpc": {
         "type": "Project",
         "dependencies": {
           "FS.GG.Net.Core": "[0.5.0, )",
-          "FSharp.Core": "[10.1.301, )",
+          "FSharp.Core": "[10.1.400, )",
           "Grpc.Net.Client": "[2.67.0, )",
           "protobuf-net.Grpc": "[1.1.1, )"
         }
@@ -80,7 +80,7 @@
         "type": "Project",
         "dependencies": {
           "FS.GG.Net.Core": "[0.5.0, )",
-          "FSharp.Core": "[10.1.301, )",
+          "FSharp.Core": "[10.1.400, )",
           "Google.Protobuf": "[3.29.3, )",
           "protobuf-net": "[3.2.45, )",
           "protobuf-net-fsharp": "[0.1.0, )"
@@ -89,8 +89,8 @@
       "grpcservice.contracts": {
         "type": "Project",
         "dependencies": {
-          "FSharp.Core": "[10.1.301, )",
-          "System.Security.Cryptography.Xml": "[10.0.10, )",
+          "FSharp.Core": "[10.1.400, )",
+          "System.Security.Cryptography.Xml": "[10.0.11, )",
           "System.ServiceModel.Primitives": "[8.1.0, )",
           "protobuf-net": "[3.2.45, )",
           "protobuf-net.Grpc": "[1.1.1, )"
@@ -123,11 +123,11 @@
       },
       "System.Security.Cryptography.Xml": {
         "type": "CentralTransitive",
-        "requested": "[10.0.10, )",
-        "resolved": "10.0.10",
-        "contentHash": "Mz6Y+s+uMQKj1H2BUF0OhlmaOQkLgSG34/IrUaBDirYBQ6bgwcFvO/XtXWcoDlBLFoFB0uKqDNhybHOd+fQK1A==",
+        "requested": "[10.0.11, )",
+        "resolved": "10.0.11",
+        "contentHash": "TokfVsaU2fmcwvsU6ihLCkseVfwhLX6Tmbl3qh3nOBIqHSX4yqFllpslA+PuHERH/ENu3kwqo4deZiyT0Wvh3Q==",
         "dependencies": {
-          "System.Security.Cryptography.Pkcs": "10.0.10"
+          "System.Security.Cryptography.Pkcs": "10.0.11"
         }
       },
       "System.ServiceModel.Primitives": {

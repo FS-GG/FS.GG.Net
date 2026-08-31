@@ -67,7 +67,7 @@
       },
       "protobuf-net": {
         "type": "CentralTransitive",
-        "requested": "[3.2.45, )",
+        "requested": "[3.4.21, )",
         "resolved": "2.4.8",
         "contentHash": "O+vbVVDxTWlFRBe5OsAmMKqqD7WQ7TPIH97Nr/Pk8gDxtNW77seiDmXfxnODuWIkm0fYW7kE5ILq8jHsgH79yg==",
         "dependencies": {

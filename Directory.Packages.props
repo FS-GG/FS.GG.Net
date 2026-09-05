@@ -25,7 +25,7 @@
          Skipping that step on a hand bump is what red-lit `coordination-coherence` on main (#37).
          Do NOT add a local Renovate override for this file; the org preset already treats it as
          enabled here (.github#1552). -->
-    <PackageVersion Include="FS.GG.Kit" Version="0.81.1" />
+    <PackageVersion Include="FS.GG.Kit" Version="0.82.0" />
 
     <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).
          FS.GG.Net.Core depends on FSharp.Core ALONE. -->

@@ -51,9 +51,9 @@
       },
       "protobuf-net-fsharp": {
         "type": "Direct",
-        "requested": "[0.1.0, )",
-        "resolved": "0.1.0",
-        "contentHash": "nDHjecfSB4w2D00vGzBY1Xqa1wnDo9h3aPS4Y++UKmE34ZeLkhgawXxYX1TuQLx0TG0ZXvuj04yV7skEVPM5/w==",
+        "requested": "[0.2.1, )",
+        "resolved": "0.2.1",
+        "contentHash": "WvBhxzB3zQm7jRQlHhONGRxBKLy/jDkG3OttdY7uOieN1WImeJmy/yarbveDFohx9//vxjt0qYmHu8FF2ct1ZA==",
         "dependencies": {
           "FSharp.Core": "4.0.0",
           "protobuf-net": "0.0.0"
@@ -206,7 +206,7 @@
           "FSharp.Core": "[10.1.301, )",
           "Google.Protobuf": "[3.29.3, )",
           "protobuf-net": "[3.2.45, )",
-          "protobuf-net-fsharp": "[0.1.0, )"
+          "protobuf-net-fsharp": "[0.2.1, )"
         }
       },
       "fs.gg.net.websocket": {

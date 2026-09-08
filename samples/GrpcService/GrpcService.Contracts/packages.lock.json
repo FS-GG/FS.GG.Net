@@ -38,9 +38,9 @@
       },
       "System.ServiceModel.Primitives": {
         "type": "Direct",
-        "requested": "[8.1.0, )",
-        "resolved": "8.1.0",
-        "contentHash": "/NGnzQSp2lmTlCfKzcD2PVKRnx6bQCbEqlb5sXo31TA2C7oA8g5I7Wfjk8dNRNUo1uSqZUcj3htED6tWA/mX9w==",
+        "requested": "[8.1.2, )",
+        "resolved": "8.1.2",
+        "contentHash": "xlJ07FAUSDjPL/GhvVY1/KVPWn2ce056X4nHPwqAa5rkNLiNN5rqh6VcgMUoF6J7ckwhkVJ1vVx/K/47nyyR9g==",
         "dependencies": {
           "Microsoft.Extensions.ObjectPool": "8.0.10",
           "System.Security.Cryptography.Xml": "8.0.2"

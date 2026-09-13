@@ -12,6 +12,8 @@
   <ItemGroup>
     <Compile Include="Core.fsi" />
     <Compile Include="Core.fs" />
+    <Compile Include="Delivery.fsi" />
+    <Compile Include="Delivery.fs" />
   </ItemGroup>
 
   <!-- Bottom layer: FSharp.Core is the ONLY dependency, pinned via CPM to the org common 10.1.301. -->

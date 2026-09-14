@@ -40,6 +40,8 @@ jobs:
         run: dotnet build FS.GG.Net.slnx -c Debug --no-restore
       - name: Test (--no-restore)
         run: dotnet test FS.GG.Net.slnx -c Debug --no-restore
+      - name: Verify 0.6.0 release contract
+        run: tests/release/test-net-0-6-release.sh --source-only
 
       # ── ADR-0067 §8's runtime skill-root alarm, ON A CONTEXT THAT CAN BLOCK ──────────────────
       # This used to be a separate `composition` job named `Composition (runtime skill roots)`,

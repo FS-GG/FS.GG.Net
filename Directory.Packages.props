@@ -38,7 +38,7 @@
     <!-- Grpc.Tools: build-only protobuf codegen, used by the samples/Sc2Handshake vendored-.proto lib. -->
     <PackageVersion Include="Grpc.Tools" Version="2.69.0" />
     <PackageVersion Include="protobuf-net" Version="3.2.45" />
-    <PackageVersion Include="protobuf-net-fsharp" Version="0.1.0" />
+    <PackageVersion Include="protobuf-net-fsharp" Version="0.2.1" />
 
     <!-- gRPC transport: FS.GG.Net.Grpc (the BAR substrate). Thin lifecycle wrapper only — grpc-dotnet
          and protobuf-net.Grpc already do method dispatch well; we do not re-abstract it. -->

@@ -28,8 +28,8 @@
       },
       "Grpc.Core.Api": {
         "type": "Transitive",
-        "resolved": "2.51.0",
-        "contentHash": "WUYCnxZKfdBWCKNs08lWFRoTjESt3iyFDthsZu5KcWguZ4OnnXrTu/K5mIdO+R9dUhuw5Xm1ygUrI1e2q8d1YA=="
+        "resolved": "2.80.0",
+        "contentHash": "i/8s+MOrYa6n7BmZ5bilcbHk+EMJDQHm2MKLhwGAT+urQqlZ6cpjvSivYvuULjebuX+UKieLYZbLRCmVQxFRkw=="
       },
       "Grpc.Net.Common": {
         "type": "Transitive",
@@ -66,7 +66,7 @@
           "FSharp.Core": "[10.1.301, )",
           "System.ServiceModel.Primitives": "[8.1.0, )",
           "protobuf-net": "[3.2.45, )",
-          "protobuf-net.Grpc": "[1.1.1, )"
+          "protobuf-net.Grpc": "[1.3.14, )"
         }
       },
       "Google.Protobuf": {
@@ -96,11 +96,11 @@
       },
       "protobuf-net.Grpc": {
         "type": "CentralTransitive",
-        "requested": "[1.1.1, )",
-        "resolved": "1.1.1",
-        "contentHash": "uThFb/iUplzuXEa/cztJaNGpKLRQRb515STtQX99IS1MKh8Qsunw6MjjU+9rjo8s9UymR6lN9Ab6xT3adBlyDg==",
+        "requested": "[1.3.14, )",
+        "resolved": "1.3.14",
+        "contentHash": "LZXT38nUfQDp5C7V4uVeb7cg7NsAoELKEMklcD9VF0i1MMCY1WrWnrfT7G0hhlmnIGIkBf9lsyoOeIJiQ4wO4Q==",
         "dependencies": {
-          "Grpc.Core.Api": "2.51.0",
+          "Grpc.Core.Api": "2.80.0",
           "protobuf-net": "2.4.8"
         }
       },

@@ -2,14 +2,18 @@ namespace FS.GG.Net.Core
 
 /// Opaque reconnect identity issued by the owning server session.
 type ReconnectTicket =
-    { SessionId: string
-      ClientId: string
-      Token: string }
+    {
+        SessionId: string
+        ClientId: string
+        Token: string
+    }
 
 /// Bounds retained delivery and reconnect lifetime.
 type DeliveryConfig =
-    { MaxQueuedDeltas: int
-      ReconnectLifetimeMilliseconds: uint64 }
+    {
+        MaxQueuedDeltas: int
+        ReconnectLifetimeMilliseconds: uint64
+    }
 
 [<RequireQualifiedAccess>]
 type DeliveryMessage<'delta, 'snapshot> =
@@ -22,7 +26,14 @@ type DeliveryStatus =
     | Disconnected of expiresAtMilliseconds: uint64
     | Disposed
 
-type DeliveryState<'delta, 'snapshot> = private DeliveryState of DeliveryConfig * ReconnectTicket * DeliveryStatus * uint64 * uint64 * DeliveryMessage<'delta, 'snapshot> list
+type DeliveryState<'delta, 'snapshot> =
+    private | DeliveryState of
+        DeliveryConfig *
+        ReconnectTicket *
+        DeliveryStatus *
+        uint64 *
+        uint64 *
+        DeliveryMessage<'delta, 'snapshot> list
 
 [<RequireQualifiedAccess>]
 type DeliveryIssue =
@@ -52,26 +63,31 @@ module Delivery =
     val create:
         config: DeliveryConfig ->
         ticket: ReconnectTicket ->
-        initialRevision: uint64 -> Result<DeliveryState<'delta, 'snapshot>, DeliveryIssue list>
+        initialRevision: uint64 ->
+            Result<DeliveryState<'delta, 'snapshot>, DeliveryIssue list>
 
     val publish:
         revision: uint64 ->
         delta: 'delta ->
         snapshot: 'snapshot ->
-        state: DeliveryState<'delta, 'snapshot> -> Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
+        state: DeliveryState<'delta, 'snapshot> ->
+            Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
 
     val acknowledge:
         revision: uint64 ->
-        state: DeliveryState<'delta, 'snapshot> -> Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
+        state: DeliveryState<'delta, 'snapshot> ->
+            Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
 
     val disconnect:
         nowMilliseconds: uint64 ->
-        state: DeliveryState<'delta, 'snapshot> -> Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
+        state: DeliveryState<'delta, 'snapshot> ->
+            Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
 
     val reconnect:
         ticket: ReconnectTicket ->
         nowMilliseconds: uint64 ->
-        state: DeliveryState<'delta, 'snapshot> -> Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
+        state: DeliveryState<'delta, 'snapshot> ->
+            Result<DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>, DeliveryIssue>
 
     val dispose:
         state: DeliveryState<'delta, 'snapshot> -> DeliveryState<'delta, 'snapshot> * DeliveryEffect<'delta, 'snapshot>

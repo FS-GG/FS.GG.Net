@@ -22,38 +22,42 @@ type ConnectionState =
 type ITransport =
     inherit IAsyncDisposable
     /// The current lifecycle state.
-    abstract member State : ConnectionState
+    abstract member State: ConnectionState
     /// Send one complete application message. Honours cancellation.
-    abstract member Send : message: ReadOnlyMemory<byte> * ct: CancellationToken -> ValueTask
+    abstract member Send: message: ReadOnlyMemory<byte> * ct: CancellationToken -> ValueTask
     /// The stream of complete inbound application messages, in arrival order.
-    abstract member Receive : IAsyncEnumerable<ReadOnlyMemory<byte>>
+    abstract member Receive: IAsyncEnumerable<ReadOnlyMemory<byte>>
 
 /// Public contract type exposed by this FS.GG.Net.Core package.
 /// Turns a typed message to and from the bytes a transport carries. One implementation per protobuf
 /// stack (Google.Protobuf, protobuf-net) lives in FS.GG.Net.Protobuf — the core stays serializer-agnostic.
 type IMessageCodec<'T> =
-    abstract member Encode : value: 'T -> ReadOnlyMemory<byte>
-    abstract member Decode : bytes: ReadOnlyMemory<byte> -> 'T
+    abstract member Encode: value: 'T -> ReadOnlyMemory<byte>
+    abstract member Decode: bytes: ReadOnlyMemory<byte> -> 'T
 
 /// Public contract type exposed by this FS.GG.Net.Core package.
 /// An optional id-echo the correlator uses to bind a response to its request. SC2 exposes one:
 /// `Request.id` and `Response.id` are both proto field 97. When present, a `Sequential` channel
 /// stamps a monotonic id and asserts the response echoes it — a cheap desync guard.
 type IdEcho<'Req, 'Resp> =
-    { /// Return `request` carrying the given correlation id.
-      Stamp: 'Req -> uint64 -> 'Req
-      /// Read the echoed correlation id off a response.
-      Read: 'Resp -> uint64 }
+    {
+        /// Return `request` carrying the given correlation id.
+        Stamp: 'Req -> uint64 -> 'Req
+        /// Read the echoed correlation id off a response.
+        Read: 'Resp -> uint64
+    }
 
 /// Public contract type exposed by this FS.GG.Net.Core package.
 /// The server-side mirror of `IdEcho`: read the correlation id off an inbound request, and stamp it
 /// onto the outgoing response, so the client's correlator can match the reply to its request. (SC2's
 /// server does exactly this — `Response.id` echoes `Request.id`, field 97.)
 type ServerEcho<'Req, 'Resp> =
-    { /// Read the correlation id off an inbound request.
-      ReadId: 'Req -> uint64
-      /// Return the response carrying that id (echoed back to the client).
-      StampId: 'Resp -> uint64 -> 'Resp }
+    {
+        /// Read the correlation id off an inbound request.
+        ReadId: 'Req -> uint64
+        /// Return the response carrying that id (echoed back to the client).
+        StampId: 'Resp -> uint64 -> 'Resp
+    }
 
 /// The operation that failed while serving one request.
 [<RequireQualifiedAccess>]
@@ -63,17 +67,18 @@ type ServeFailureStage =
 
 /// A promptly observed request failure. Reporting it does not terminate the connection.
 type ServeDiagnostic =
-    { Stage: ServeFailureStage
-      Error: exn }
+    { Stage: ServeFailureStage; Error: exn }
 
 /// Controls bounded concurrent request handling and shutdown for `MessageChannel.serveWithOptions`.
 type ServeOptions =
-    { /// Maximum concurrent handlers when an id echo permits out-of-order replies.
-      MaxConcurrentHandlers: int
-      /// Cancels receive admission and is linked into active handlers and sends.
-      CancellationToken: CancellationToken
-      /// Receives handler and response failures as they occur.
-      OnDiagnostic: ServeDiagnostic -> unit }
+    {
+        /// Maximum concurrent handlers when an id echo permits out-of-order replies.
+        MaxConcurrentHandlers: int
+        /// Cancels receive admission and is linked into active handlers and sends.
+        CancellationToken: CancellationToken
+        /// Receives handler and response failures as they occur.
+        OnDiagnostic: ServeDiagnostic -> unit
+    }
 
 /// Defaults for bounded server-side request handling.
 [<RequireQualifiedAccess>]

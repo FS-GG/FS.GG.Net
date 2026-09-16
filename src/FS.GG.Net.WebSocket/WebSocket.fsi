@@ -9,20 +9,22 @@ open FS.GG.Net.Core
 /// Public contract type exposed by this FS.GG.Net.WebSocket package.
 /// Options for the client WebSocket transport.
 type WebSocketOptions =
-    { /// Attempts to establish the INITIAL connection before giving up. The SC2 game boots its
-      /// process and only then starts listening, so the first connect must be retried.
-      ConnectRetries: int
-      /// Delay between initial connect attempts.
-      ConnectBackoff: TimeSpan
-      /// Size of each pooled receive buffer read; a message larger than this is reassembled across
-      /// reads (SC2 raw observations are multi-MB), so this is a read granularity, not a max size.
-      ReceiveBufferSize: int
-      /// Maximum number of complete inbound messages buffered for a slow consumer. When full, the
-      /// receive loop stops reading the socket until channel capacity becomes available.
-      InboundCapacity: int
-      /// Maximum bytes allowed in one reassembled inbound message. An excess closes the WebSocket
-      /// with status 1009 (Message Too Big) and publishes no partial message. }
-      MaxMessageSize: int }
+    {
+        /// Attempts to establish the INITIAL connection before giving up. The SC2 game boots its
+        /// process and only then starts listening, so the first connect must be retried.
+        ConnectRetries: int
+        /// Delay between initial connect attempts.
+        ConnectBackoff: TimeSpan
+        /// Size of each pooled receive buffer read; a message larger than this is reassembled across
+        /// reads (SC2 raw observations are multi-MB), so this is a read granularity, not a max size.
+        ReceiveBufferSize: int
+        /// Maximum number of complete inbound messages buffered for a slow consumer. When full, the
+        /// receive loop stops reading the socket until channel capacity becomes available.
+        InboundCapacity: int
+        /// Maximum bytes allowed in one reassembled inbound message. An excess closes the WebSocket
+        /// with status 1009 (Message Too Big) and publishes no partial message. }
+        MaxMessageSize: int
+    }
 
 /// Public contract exposed by this FS.GG.Net.WebSocket package.
 [<RequireQualifiedAccess>]

@@ -22,5 +22,4 @@ module Net =
     module Sub =
         /// Subscribe to the channel's unsolicited incoming messages under `subId`, mapping each to a
         /// message. Disposing the subscription stops the read loop.
-        val incoming:
-            channel: IMessageChannel<'Req, 'Resp> -> subId: string -> map: ('Resp -> 'Msg) -> Sub<'Msg>
+        val incoming: channel: IMessageChannel<'Req, 'Resp> -> subId: string -> map: ('Resp -> 'Msg) -> Sub<'Msg>

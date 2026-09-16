@@ -12,14 +12,14 @@ open Microsoft.Extensions.Logging
 open Microsoft.AspNetCore.Hosting.Server
 open Microsoft.AspNetCore.Hosting.Server.Features
 
-type Running =
-    { Uri: Uri
-      Stop: unit -> Task }
+type Running = { Uri: Uri; Stop: unit -> Task }
 
 type Pushing =
-    { Uri: Uri
-      PeerCloseStatus: Task<WebSocketCloseStatus option>
-      Stop: unit -> Task }
+    {
+        Uri: Uri
+        PeerCloseStatus: Task<WebSocketCloseStatus option>
+        Stop: unit -> Task
+    }
 
 /// Start an in-process WebSocket echo server on an ephemeral port. Each inbound message is
 /// accumulated to EndOfMessage and echoed back whole as one binary message — so a payload larger
@@ -71,14 +71,16 @@ let start () : Task<Running> =
         do! app.StartAsync()
 
         let addresses =
-            app.Services
-                .GetRequiredService<IServer>()
-                .Features.Get<IServerAddressesFeature>()
-                .Addresses
+            app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses
 
         let port = Uri(Seq.head addresses).Port
         let wsUri = Uri(sprintf "ws://127.0.0.1:%d/echo" port)
-        return { Uri = wsUri; Stop = fun () -> app.StopAsync() }
+
+        return
+            {
+                Uri = wsUri
+                Stop = fun () -> app.StopAsync()
+            }
     }
 
 /// Start a server that sends one binary message immediately and records the close status returned by
@@ -136,15 +138,14 @@ let startPushing (payload: byte[]) : Task<Pushing> =
         do! app.StartAsync()
 
         let addresses =
-            app.Services
-                .GetRequiredService<IServer>()
-                .Features.Get<IServerAddressesFeature>()
-                .Addresses
+            app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses
 
         let port = Uri(Seq.head addresses).Port
 
         return
-            { Uri = Uri(sprintf "ws://127.0.0.1:%d/push" port)
-              PeerCloseStatus = closeStatus.Task
-              Stop = fun () -> app.StopAsync() }
+            {
+                Uri = Uri(sprintf "ws://127.0.0.1:%d/push" port)
+                PeerCloseStatus = closeStatus.Task
+                Stop = fun () -> app.StopAsync()
+            }
     }

@@ -17,7 +17,12 @@ open FS.GG.Net.WebSocket
 [<EntryPoint>]
 let main argv =
     let port = if argv.Length > 0 then int argv[0] else 5000
-    let mapPath = if argv.Length > 1 then argv[1] else "Ladder2019Season1/CyberForestLE.SC2Map"
+
+    let mapPath =
+        if argv.Length > 1 then
+            argv[1]
+        else
+            "Ladder2019Season1/CyberForestLE.SC2Map"
 
     let run () =
         task {
@@ -27,16 +32,19 @@ let main argv =
             let opts =
                 { WebSocketOptions.defaults with
                     ConnectRetries = 120
-                    ConnectBackoff = TimeSpan.FromMilliseconds 500.0 }
+                    ConnectBackoff = TimeSpan.FromMilliseconds 500.0
+                }
 
             let! transport = WebSocketTransport.connectAsync uri opts CancellationToken.None
 
             let idEcho: IdEcho<Request, Response> =
-                { Stamp =
-                    fun (r: Request) id ->
-                        r.Id <- uint32 id
-                        r
-                  Read = fun (r: Response) -> uint64 r.Id }
+                {
+                    Stamp =
+                        fun (r: Request) id ->
+                            r.Id <- uint32 id
+                            r
+                    Read = fun (r: Response) -> uint64 r.Id
+                }
 
             let channel =
                 MessageChannel.create
@@ -67,11 +75,17 @@ let main argv =
             printfn "── CreateGame (%s)" mapPath
             let cg = RequestCreateGame(LocalMap = LocalMap(MapPath = mapPath))
             cg.PlayerSetup.Add(PlayerSetup(Type = PlayerType.Participant))
-            cg.PlayerSetup.Add(PlayerSetup(Type = PlayerType.Computer, Race = Race.Random, Difficulty = Difficulty.VeryEasy))
+
+            cg.PlayerSetup.Add(
+                PlayerSetup(Type = PlayerType.Computer, Race = Race.Random, Difficulty = Difficulty.VeryEasy)
+            )
+
             cg.Realtime <- false
             let! cgResp = exchange "create_game" (Request(CreateGame = cg))
+
             if cgResp.CreateGame.HasError then
                 failwithf "CreateGame rejected: %A (%s)" cgResp.CreateGame.Error cgResp.CreateGame.ErrorDetails
+
             printfn "    created (no error)"
 
             printfn "── JoinGame (raw interface, Terran)"
@@ -85,7 +99,12 @@ let main argv =
             let loop0 = obs1.Observation.Observation.GameLoop
             let units = obs1.Observation.Observation.RawData.Units.Count
             let payloadBytes = (obs1.Observation :> Google.Protobuf.IMessage).CalculateSize()
-            printfn "    game_loop=%d  raw_units=%d  observation_payload=%d bytes (reassembled)" loop0 units payloadBytes
+
+            printfn
+                "    game_loop=%d  raw_units=%d  observation_payload=%d bytes (reassembled)"
+                loop0
+                units
+                payloadBytes
 
             printfn "── Step x112"
             let! _ = exchange "step" (Request(Step = RequestStep(Count = 112u)))

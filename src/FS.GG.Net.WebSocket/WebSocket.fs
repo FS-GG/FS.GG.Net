@@ -10,20 +10,24 @@ open System.Threading.Tasks
 open FS.GG.Net.Core
 
 type WebSocketOptions =
-    { ConnectRetries: int
-      ConnectBackoff: TimeSpan
-      ReceiveBufferSize: int
-      InboundCapacity: int
-      MaxMessageSize: int }
+    {
+        ConnectRetries: int
+        ConnectBackoff: TimeSpan
+        ReceiveBufferSize: int
+        InboundCapacity: int
+        MaxMessageSize: int
+    }
 
 [<RequireQualifiedAccess>]
 module WebSocketOptions =
     let defaults =
-        { ConnectRetries = 40
-          ConnectBackoff = TimeSpan.FromMilliseconds 250.0
-          ReceiveBufferSize = 64 * 1024
-          InboundCapacity = 16
-          MaxMessageSize = 64 * 1024 * 1024 }
+        {
+            ConnectRetries = 40
+            ConnectBackoff = TimeSpan.FromMilliseconds 250.0
+            ReceiveBufferSize = 64 * 1024
+            InboundCapacity = 16
+            MaxMessageSize = 64 * 1024 * 1024
+        }
 
 /// A WebSocket ITransport over any open socket (client-connected or server-accepted). A background
 /// loop reassembles continuation frames into complete application messages and publishes them on an
@@ -91,8 +95,7 @@ type private SocketTransport(ws: WebSocket, options: WebSocketOptions) =
 
                                     // FullMode.Wait plus an awaited write is the backpressure boundary:
                                     // the socket is not read again until the consumer frees channel space.
-                                    do!
-                                        inbound.Writer.WriteAsync(ReadOnlyMemory<byte> msg, loopCts.Token).AsTask()
+                                    do! inbound.Writer.WriteAsync(ReadOnlyMemory<byte> msg, loopCts.Token).AsTask()
 
                     inbound.Writer.TryComplete() |> ignore
                 with

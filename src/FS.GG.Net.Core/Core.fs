@@ -25,12 +25,16 @@ type IMessageCodec<'T> =
     abstract member Decode: bytes: ReadOnlyMemory<byte> -> 'T
 
 type IdEcho<'Req, 'Resp> =
-    { Stamp: 'Req -> uint64 -> 'Req
-      Read: 'Resp -> uint64 }
+    {
+        Stamp: 'Req -> uint64 -> 'Req
+        Read: 'Resp -> uint64
+    }
 
 type ServerEcho<'Req, 'Resp> =
-    { ReadId: 'Req -> uint64
-      StampId: 'Resp -> uint64 -> 'Resp }
+    {
+        ReadId: 'Req -> uint64
+        StampId: 'Resp -> uint64 -> 'Resp
+    }
 
 [<RequireQualifiedAccess>]
 type ServeFailureStage =
@@ -38,20 +42,23 @@ type ServeFailureStage =
     | ResponseSend
 
 type ServeDiagnostic =
-    { Stage: ServeFailureStage
-      Error: exn }
+    { Stage: ServeFailureStage; Error: exn }
 
 type ServeOptions =
-    { MaxConcurrentHandlers: int
-      CancellationToken: CancellationToken
-      OnDiagnostic: ServeDiagnostic -> unit }
+    {
+        MaxConcurrentHandlers: int
+        CancellationToken: CancellationToken
+        OnDiagnostic: ServeDiagnostic -> unit
+    }
 
 [<RequireQualifiedAccess>]
 module ServeOptions =
     let defaults =
-        { MaxConcurrentHandlers = 64
-          CancellationToken = CancellationToken.None
-          OnDiagnostic = ignore }
+        {
+            MaxConcurrentHandlers = 64
+            CancellationToken = CancellationToken.None
+            OnDiagnostic = ignore
+        }
 
 type Correlation<'Req, 'Resp> =
     | Sequential of idEcho: IdEcho<'Req, 'Resp> option
@@ -88,8 +95,10 @@ module MessageChannel =
         let loopCts = new CancellationTokenSource()
         let disposeCts = new CancellationTokenSource()
         let lifecycleSync = obj ()
+
         let disposeCompletion =
             TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
+
         let mutable disposeStarted = false
         let mutable activeExchanges = 0
         let mutable drainWaiter: TaskCompletionSource<unit> option = None
@@ -120,8 +129,7 @@ module MessageChannel =
                     else
                         None)
 
-            waiter
-            |> Option.iter (fun tcs -> tcs.TrySetResult() |> ignore)
+            waiter |> Option.iter (fun tcs -> tcs.TrySetResult() |> ignore)
 
         let terminate (cause: exn option) =
             let error, waiting, firstTermination =
@@ -143,8 +151,7 @@ module MessageChannel =
             if firstTermination then
                 // Settle the active waiter before waking callers queued on the gate. Every admitted
                 // exchange therefore observes the same typed terminal error, never a bare cancellation.
-                waiting
-                |> Option.iter (fun tcs -> tcs.TrySetException error |> ignore)
+                waiting |> Option.iter (fun tcs -> tcs.TrySetException error |> ignore)
 
                 incoming.Writer.TryComplete error |> ignore
                 disposeCts.Cancel()
@@ -156,12 +163,15 @@ module MessageChannel =
                 try
                     use e = transport.Receive.GetAsyncEnumerator(loopCts.Token)
                     let mutable go = true
+
                     while go do
                         let! moved = e.MoveNextAsync()
+
                         if not moved then
                             go <- false
                         else
                             let resp = responseCodec.Decode e.Current
+
                             let waiting =
                                 lock sync (fun () ->
                                     match pending with
@@ -202,9 +212,7 @@ module MessageChannel =
                                 Task.CompletedTask
                             else
                                 let waiter =
-                                    TaskCompletionSource<unit>(
-                                        TaskCreationOptions.RunContinuationsAsynchronously
-                                    )
+                                    TaskCompletionSource<unit>(TaskCreationOptions.RunContinuationsAsynchronously)
 
                                 drainWaiter <- Some waiter
                                 waiter.Task :> Task
@@ -253,9 +261,7 @@ module MessageChannel =
 
                             try
                                 let tcs =
-                                    TaskCompletionSource<'Resp>(
-                                        TaskCreationOptions.RunContinuationsAsynchronously
-                                    )
+                                    TaskCompletionSource<'Resp>(TaskCreationOptions.RunContinuationsAsynchronously)
 
                                 let stamped, expected =
                                     match idEcho with
@@ -265,9 +271,7 @@ module MessageChannel =
                                     | None -> request, None
 
                                 lock sync (fun () -> pending <- Some tcs)
-                                use _reg =
-                                    exchangeCt.Register(fun () ->
-                                        tcs.TrySetCanceled exchangeCt |> ignore)
+                                use _reg = exchangeCt.Register(fun () -> tcs.TrySetCanceled exchangeCt |> ignore)
 
                                 try
                                     do! transport.Send(requestCodec.Encode stamped, exchangeCt)
@@ -276,6 +280,7 @@ module MessageChannel =
                                     match idEcho, expected with
                                     | Some echo, Some expectedId ->
                                         let actual = echo.Read resp
+
                                         if actual <> expectedId then
                                             raise (CorrelationMismatch(expectedId, actual))
                                     | _ -> ()
@@ -298,8 +303,8 @@ module MessageChannel =
                         leaveExchange ()
                 }
 
-            member _.DisposeAsync() : ValueTask =
-                ValueTask(dispose ()) }
+            member _.DisposeAsync() : ValueTask = ValueTask(dispose ())
+        }
 
     /// The Multiplexed channel: many requests in flight at once. Each Exchange stamps a unique,
     /// monotonic id, registers its waiter in a concurrent map keyed by that id, and sends. The
@@ -383,7 +388,8 @@ module MessageChannel =
                         loopCts.Dispose()
                         do! transport.DisposeAsync().AsTask()
                     }
-                ) }
+                )
+        }
 
     let create
         (transport: ITransport)
@@ -472,10 +478,7 @@ module MessageChannel =
                         while go do
                             let! moved = e.MoveNextAsync()
 
-                            if moved then
-                                do! handleOne e.Current
-                            else
-                                go <- false
+                            if moved then do! handleOne e.Current else go <- false
                     with :? OperationCanceledException when ct.IsCancellationRequested ->
                         ()
                 }
@@ -518,10 +521,5 @@ module MessageChannel =
         (echo: ServerEcho<'Req, 'Resp> option)
         (handler: 'Req -> Task<'Resp>)
         : Task =
-        serveWithOptions
-            transport
-            requestCodec
-            responseCodec
-            echo
-            ServeOptions.defaults
-            (fun request _ -> handler request)
+        serveWithOptions transport requestCodec responseCodec echo ServeOptions.defaults (fun request _ ->
+            handler request)

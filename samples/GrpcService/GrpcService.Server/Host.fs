@@ -11,9 +11,7 @@ open Microsoft.Extensions.Logging
 open ProtoBuf.Grpc.Server
 open FS.GG.Net.Protobuf
 
-type Running =
-    { Address: string
-      Stop: unit -> Task }
+type Running = { Address: string; Stop: unit -> Task }
 
 /// Host the code-first service in-process on an ephemeral h2c (plaintext HTTP/2) port. Reused by the
 /// integration test and runnable standalone. The F# record contracts are registered up front via
@@ -37,11 +35,12 @@ let start () : Task<Running> =
         do! app.StartAsync()
 
         let address =
-            app.Services
-                .GetRequiredService<IServer>()
-                .Features.Get<IServerAddressesFeature>()
-                .Addresses
+            app.Services.GetRequiredService<IServer>().Features.Get<IServerAddressesFeature>().Addresses
             |> Seq.head
 
-        return { Address = address; Stop = fun () -> app.StopAsync() }
+        return
+            {
+                Address = address
+                Stop = fun () -> app.StopAsync()
+            }
     }

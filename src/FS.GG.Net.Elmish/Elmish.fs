@@ -31,10 +31,7 @@ module Net =
                             while go do
                                 let! moved = e.MoveNextAsync()
 
-                                if not moved then
-                                    go <- false
-                                else
-                                    dispatch (map e.Current)
+                                if not moved then go <- false else dispatch (map e.Current)
                         with _ ->
                             ()
                     }
@@ -44,6 +41,7 @@ module Net =
                 { new IDisposable with
                     member _.Dispose() =
                         cts.Cancel()
-                        cts.Dispose() }
+                        cts.Dispose()
+                }
 
             [ [ subId ], start ]

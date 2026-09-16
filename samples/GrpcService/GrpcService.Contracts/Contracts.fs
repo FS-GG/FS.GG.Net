@@ -12,16 +12,32 @@ open ProtoBuf.Grpc
 // (FS.GG.Net.Protobuf.Registration does that); use `array` not `list`, `Dictionary` not `Map`.
 
 [<ProtoContract>]
-type GreetRequest = { [<ProtoMember(1)>] Name: string }
+type GreetRequest =
+    {
+        [<ProtoMember(1)>]
+        Name: string
+    }
 
 [<ProtoContract>]
-type GreetReply = { [<ProtoMember(1)>] Message: string }
+type GreetReply =
+    {
+        [<ProtoMember(1)>]
+        Message: string
+    }
 
 [<ProtoContract>]
-type CountRequest = { [<ProtoMember(1)>] To: int }
+type CountRequest =
+    {
+        [<ProtoMember(1)>]
+        To: int
+    }
 
 [<ProtoContract>]
-type Tick = { [<ProtoMember(1)>] N: int }
+type Tick =
+    {
+        [<ProtoMember(1)>]
+        N: int
+    }
 
 /// The service third-party clients target. `SayHello` is unary; `CountTo` is server-streaming.
 [<ServiceContract>]

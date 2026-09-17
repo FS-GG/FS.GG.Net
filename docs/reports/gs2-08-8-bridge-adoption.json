@@ -40,7 +40,8 @@
     {
       "entrypoint": "scripts/fsgg-coord",
       "sha256": "a0689f0ba8cd0180fd1ca60a63bba55e93513732b36e099c541847336ddb3ccf",
-      "disposition": "installed-cli-production-mutations-refused"
+      "disposition": "bridge-adopted",
+      "behavior": "installed-cli-production-mutations-refused"
     },
     {
       "entrypoint": ".github/workflows/release.yml",

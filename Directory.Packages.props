@@ -43,7 +43,7 @@
     <!-- gRPC transport: FS.GG.Net.Grpc (the BAR substrate). Thin lifecycle wrapper only — grpc-dotnet
          and protobuf-net.Grpc already do method dispatch well; we do not re-abstract it. -->
     <PackageVersion Include="Grpc.Net.Client" Version="2.67.0" />
-    <PackageVersion Include="protobuf-net.Grpc" Version="1.1.1" />
+    <PackageVersion Include="protobuf-net.Grpc" Version="1.3.14" />
     <!-- Server hosting for the samples/GrpcService code-first service. -->
     <PackageVersion Include="protobuf-net.Grpc.AspNetCore" Version="1.1.1" />
     <PackageVersion Include="System.ServiceModel.Primitives" Version="8.1.0" />

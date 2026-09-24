@@ -76,7 +76,7 @@
       },
       "System.ServiceModel.Primitives": {
         "type": "CentralTransitive",
-        "requested": "[8.1.0, )",
+        "requested": "[8.1.2, )",
         "resolved": "4.5.3",
         "contentHash": "Wc9Hgg4Cmqi416zvEgq2sW1YYCGuhwWzspDclJWlFZqY6EGhFUPZU+kVpl5z9kAgrSOQP7/Uiik+PtSQtmq+5A==",
         "dependencies": {

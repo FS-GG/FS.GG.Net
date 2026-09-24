@@ -16,8 +16,8 @@
       },
       "protobuf-net.Core": {
         "type": "Transitive",
-        "resolved": "3.2.45",
-        "contentHash": "PMWatW2NrT1uTXD7etJ4VdQ0wWZLFrIfdRGppD2QX7nzZ0+kIzqhq551u6ZiXJHWJgG4hWFEkSnUnt2aB6posg=="
+        "resolved": "3.4.30",
+        "contentHash": "CZf8U6eON9OBtcPyOiXJ6Oq3Opi/lWtEiireyLCy43iof1A2oA0GEOrEHZISzmQ46s61iOC06Sa4Cs+D41t1DA=="
       },
       "fs.gg.net.core": {
         "type": "Project",
@@ -31,7 +31,7 @@
           "FS.GG.Net.Core": "[0.6.0, )",
           "FSharp.Core": "[10.1.301, )",
           "Google.Protobuf": "[3.29.3, )",
-          "protobuf-net": "[3.2.45, )",
+          "protobuf-net": "[3.4.30, )",
           "protobuf-net-fsharp": "[0.1.0, )"
         }
       },
@@ -50,11 +50,11 @@
       },
       "protobuf-net": {
         "type": "CentralTransitive",
-        "requested": "[3.2.45, )",
-        "resolved": "3.2.45",
-        "contentHash": "5UZ/ukUHcGbFSl7vNMrHsfjqdxusdd9w7w0fCEXzf3UUtsrGNVCzV5SmF+sCHAbnRV2qPcD1ixiDP7Aj8lX/HA==",
+        "requested": "[3.4.30, )",
+        "resolved": "3.4.30",
+        "contentHash": "N49mhnY5fpWds085lO6ocppox9y4cTb1EmbHAAYVJMl/iYSYyNpz4Ohxnk80qtqv52dNZI+/6hQbaiz3+rTEwA==",
         "dependencies": {
-          "protobuf-net.Core": "3.2.45"
+          "protobuf-net.Core": "3.4.30"
         }
       },
       "protobuf-net-fsharp": {

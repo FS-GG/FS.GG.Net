@@ -58,8 +58,8 @@ jobs:
           fi
       - name: Build (Debug, --no-restore)
         run: dotnet build FS.GG.Net.slnx -c Debug --no-restore
-      - name: Test (--no-restore)
-        run: dotnet test FS.GG.Net.slnx -c Debug --no-restore
+      - name: Test (--no-build, --no-restore)
+        run: dotnet test FS.GG.Net.slnx -c Debug --no-build --no-restore
       - name: Verify 0.6.0 release contract
         run: tests/release/test-net-0-6-release.sh --source-only
 

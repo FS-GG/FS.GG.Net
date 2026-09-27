@@ -10,9 +10,9 @@
       },
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.29.3, )",
-        "resolved": "3.29.3",
-        "contentHash": "t7nZFFUFwigCwZ+nIXHDLweXvwIpsOXi+P7J7smPT/QjI3EKxnCzTQOhBqyEh6XEzc/pNH+bCFOOSjatrPt6Tw=="
+        "requested": "[3.36.2, )",
+        "resolved": "3.36.2",
+        "contentHash": "Ci1q1iJg74qAE5riTA2FbMS0wPbpruPQI/JQ9DrAsRo2VsSxgt1e/pmxGxgrci+pXJEgrSYg2vPl8rrStZkclQ=="
       },
       "protobuf-net": {
         "type": "Direct",
@@ -25,9 +25,9 @@
       },
       "protobuf-net-fsharp": {
         "type": "Direct",
-        "requested": "[0.1.0, )",
-        "resolved": "0.1.0",
-        "contentHash": "nDHjecfSB4w2D00vGzBY1Xqa1wnDo9h3aPS4Y++UKmE34ZeLkhgawXxYX1TuQLx0TG0ZXvuj04yV7skEVPM5/w==",
+        "requested": "[0.2.1, )",
+        "resolved": "0.2.1",
+        "contentHash": "WvBhxzB3zQm7jRQlHhONGRxBKLy/jDkG3OttdY7uOieN1WImeJmy/yarbveDFohx9//vxjt0qYmHu8FF2ct1ZA==",
         "dependencies": {
           "FSharp.Core": "4.0.0",
           "protobuf-net": "0.0.0"

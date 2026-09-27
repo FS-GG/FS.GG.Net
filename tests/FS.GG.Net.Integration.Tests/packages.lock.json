@@ -26,9 +26,9 @@
       },
       "Google.Protobuf": {
         "type": "Direct",
-        "requested": "[3.29.3, )",
-        "resolved": "3.29.3",
-        "contentHash": "t7nZFFUFwigCwZ+nIXHDLweXvwIpsOXi+P7J7smPT/QjI3EKxnCzTQOhBqyEh6XEzc/pNH+bCFOOSjatrPt6Tw=="
+        "requested": "[3.36.2, )",
+        "resolved": "3.36.2",
+        "contentHash": "Ci1q1iJg74qAE5riTA2FbMS0wPbpruPQI/JQ9DrAsRo2VsSxgt1e/pmxGxgrci+pXJEgrSYg2vPl8rrStZkclQ=="
       },
       "Microsoft.NET.Test.Sdk": {
         "type": "Direct",
@@ -51,9 +51,9 @@
       },
       "protobuf-net-fsharp": {
         "type": "Direct",
-        "requested": "[0.1.0, )",
-        "resolved": "0.1.0",
-        "contentHash": "nDHjecfSB4w2D00vGzBY1Xqa1wnDo9h3aPS4Y++UKmE34ZeLkhgawXxYX1TuQLx0TG0ZXvuj04yV7skEVPM5/w==",
+        "requested": "[0.2.1, )",
+        "resolved": "0.2.1",
+        "contentHash": "WvBhxzB3zQm7jRQlHhONGRxBKLy/jDkG3OttdY7uOieN1WImeJmy/yarbveDFohx9//vxjt0qYmHu8FF2ct1ZA==",
         "dependencies": {
           "FSharp.Core": "4.0.0",
           "protobuf-net": "0.0.0"
@@ -91,15 +91,15 @@
       },
       "Grpc.Core.Api": {
         "type": "Transitive",
-        "resolved": "2.67.0",
-        "contentHash": "cL1/2f8kc8lsAGNdfCU25deedXVehhLA6GXKLLN4hAWx16XN7BmjYn3gFU+FBpir5yJynvDTHEypr3Tl0j7x/Q=="
+        "resolved": "2.84.0",
+        "contentHash": "p2SOMl6q/GZ4/5MLkgboC/z55g4zKUEruRn/g46QgppjQBVnsLZVBU/9VO7n60ll38G3Eo8Zu9b7x+W01GKFVg=="
       },
       "Grpc.Net.Common": {
         "type": "Transitive",
-        "resolved": "2.67.0",
-        "contentHash": "gazn1cD2Eol0/W5ZJRV4PYbNrxJ9oMs8pGYux5S9E4MymClvl7aqYSmpqgmWAUWvziRqK9K+yt3cjCMfQ3x/5A==",
+        "resolved": "2.84.0",
+        "contentHash": "DPxm/H8G/lDRrz997wM0M2zN/PGqVeZKDakhBbtABEbv6WIW4HI9g3BvntBQT6ZUROuGacMzfyyF9e5kiTVFfQ==",
         "dependencies": {
-          "Grpc.Core.Api": "2.67.0"
+          "Grpc.Core.Api": "2.84.0"
         }
       },
       "Microsoft.ApplicationInsights": {
@@ -195,7 +195,7 @@
         "dependencies": {
           "FS.GG.Net.Core": "[0.6.0, )",
           "FSharp.Core": "[10.1.301, )",
-          "Grpc.Net.Client": "[2.67.0, )",
+          "Grpc.Net.Client": "[2.84.0, )",
           "protobuf-net.Grpc": "[1.1.1, )"
         }
       },
@@ -204,9 +204,9 @@
         "dependencies": {
           "FS.GG.Net.Core": "[0.6.0, )",
           "FSharp.Core": "[10.1.301, )",
-          "Google.Protobuf": "[3.29.3, )",
+          "Google.Protobuf": "[3.36.2, )",
           "protobuf-net": "[3.2.45, )",
-          "protobuf-net-fsharp": "[0.1.0, )"
+          "protobuf-net-fsharp": "[0.2.1, )"
         }
       },
       "fs.gg.net.websocket": {
@@ -228,7 +228,7 @@
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.301, )",
-          "System.ServiceModel.Primitives": "[8.1.0, )",
+          "System.ServiceModel.Primitives": "[8.1.2, )",
           "protobuf-net": "[3.2.45, )",
           "protobuf-net.Grpc": "[1.1.1, )"
         }
@@ -244,11 +244,11 @@
       },
       "Grpc.Net.Client": {
         "type": "CentralTransitive",
-        "requested": "[2.67.0, )",
-        "resolved": "2.67.0",
-        "contentHash": "ofTjJQfegWkVlk5R4k/LlwpcucpsBzntygd4iAeuKd/eLMkmBWoXN+xcjYJ5IibAahRpIJU461jABZvT6E9dwA==",
+        "requested": "[2.84.0, )",
+        "resolved": "2.84.0",
+        "contentHash": "My6Fms2YCyAbihTBZZ3kLS39iTY2pkMAzGDBTC6XhPOujg70eB07AEJ7tPiW3tZ70bhFzHcc3+d4j3DaIPF3aA==",
         "dependencies": {
-          "Grpc.Net.Common": "2.67.0"
+          "Grpc.Net.Common": "2.84.0"
         }
       },
       "protobuf-net.Grpc.AspNetCore": {
@@ -263,9 +263,9 @@
       },
       "System.ServiceModel.Primitives": {
         "type": "CentralTransitive",
-        "requested": "[8.1.0, )",
-        "resolved": "8.1.0",
-        "contentHash": "/NGnzQSp2lmTlCfKzcD2PVKRnx6bQCbEqlb5sXo31TA2C7oA8g5I7Wfjk8dNRNUo1uSqZUcj3htED6tWA/mX9w=="
+        "requested": "[8.1.2, )",
+        "resolved": "8.1.2",
+        "contentHash": "xlJ07FAUSDjPL/GhvVY1/KVPWn2ce056X4nHPwqAa5rkNLiNN5rqh6VcgMUoF6J7ckwhkVJ1vVx/K/47nyyR9g=="
       }
     }
   }

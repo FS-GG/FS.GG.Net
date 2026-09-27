@@ -64,7 +64,7 @@
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )",
-          "System.ServiceModel.Primitives": "[8.1.2, )",
+          "System.ServiceModel.Primitives": "[10.0.652802, )",
           "protobuf-net": "[3.4.30, )",
           "protobuf-net.Grpc": "[1.3.14, )"
         }
@@ -106,9 +106,9 @@
       },
       "System.ServiceModel.Primitives": {
         "type": "CentralTransitive",
-        "requested": "[8.1.2, )",
-        "resolved": "8.1.2",
-        "contentHash": "xlJ07FAUSDjPL/GhvVY1/KVPWn2ce056X4nHPwqAa5rkNLiNN5rqh6VcgMUoF6J7ckwhkVJ1vVx/K/47nyyR9g=="
+        "requested": "[10.0.652802, )",
+        "resolved": "10.0.652802",
+        "contentHash": "ULfGNl75BNXkpF42wNV2CDXJ64dUZZEa8xO2mBsc4tqbW9QjruxjEB6bAr4Z/T1rNU+leOztIjCJQYsBGFWYlw=="
       }
     }
   }

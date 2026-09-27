@@ -27,7 +27,7 @@
          enabled here (.github#1552). -->
     <PackageVersion Include="FS.GG.Kit" Version="0.91.4" />
 
-    <!-- FSharp.Core: the org common pin (Rendering/SDD/Governance/Audio all pin 10.1.301).
+    <!-- FSharp.Core: the repository-wide pin.
          FS.GG.Net.Core depends on FSharp.Core ALONE. -->
     <PackageVersion Include="FSharp.Core" Version="10.1.401" />
 

@@ -1,7 +1,7 @@
 {
   "schema": "fsgg.github.v2-ci-ordinary-settlement-policy/1",
   "policyId": "v2-ci-i1-ordinary-settlement-v1",
-  "status": "source-qualified-not-installed",
+  "status": "installed",
   "repository": "FS-GG/FS.GG.Net",
   "repositoryId": 1305845505,
   "selectedSource": {
@@ -84,9 +84,9 @@
     "allowedBranches": [
       "main"
     ],
-    "installed": false,
+    "installed": true,
     "liveObservation": {
-      "observedAt": "2026-09-28T12:22:05Z",
+      "observedAt": "2026-09-28T15:00:36Z",
       "environmentPresent": true,
       "environmentId": 22920188172,
       "environmentNodeId": "EN_kwDOTdWfAc8AAAAFViZRDA",
@@ -104,17 +104,19 @@
         "V2_ORDINARY_APP_PRIVATE_KEY",
         "V2_ORDINARY_AUTHORIZER_PRIVATE_KEY"
       ],
-      "disposition": "dedicated-custody-enrolled-release-pending"
+      "disposition": "dedicated-custody-enrolled"
     }
   },
   "packagePin": {
-    "status": "awaiting-published-net-profile-release",
-    "version": null,
-    "sha256": null,
-    "servedPackageVerified": false,
+    "status": "published-verified",
+    "version": "0.1.5",
+    "sha256": "3567a92825917a7d537f6c5c545d3a7947bc35edd666fc3a1898de3bf97267c9",
+    "servedPackageVerified": true,
+    "sourceCommit": "1268908d2d5a38d30a764c927f3e0591e53138aa",
+    "releaseTag": "v0.1.5",
+    "publisherRunId": 36437778484,
     "requiredCapability": "net-v1 selected source",
-    "requiredBeforeActivation": true,
-    "refusal": "no immutable published CLI release asset with net-v1 support or verified served SHA-256 is selected"
+    "requiredBeforeActivation": true
   },
   "credentialInventory": [
     {
@@ -153,8 +155,8 @@
     "readBackAt": "2026-09-28T12:22:05Z"
   },
   "activationEvidence": {
-    "observedAt": "2026-09-28T11:55:40Z",
-    "sourceMainSha": "2fe9c00976b5d01c36fbd587c21135b650cf43b9",
+    "observedAt": "2026-09-28T15:00:36Z",
+    "sourceMainSha": "dfc04d994e955842a7e16597f7093ed14f1b5251",
     "sourceRepositoryId": 1305845505,
     "requiredCheckAppId": 15368,
     "requiredGateChecks": [
@@ -165,8 +167,8 @@
     ]
   },
   "activationPrerequisites": [
-    "published immutable Coordination CLI with net-v1 support and verified package SHA-256",
-    "current source-check population and shared Authority binding are read back again"
+    "published immutable Coordination CLI with net-v1 support and verified package SHA-256: satisfied by 0.1.5 release and public feed readback",
+    "current source-check population and shared Authority binding are read back again before activation"
   ],
   "forbiddenCredentialReuse": [
     "CALLABLE_ISOLATED_OPERATION_APP_PRIVATE_KEY",

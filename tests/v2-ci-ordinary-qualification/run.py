@@ -141,17 +141,18 @@ class NetQualificationTests(unittest.TestCase):
         with self.assertRaisesRegex(MODULE.Refusal, "wrong repository"):
             self.qualify(associations=associations)
 
-    def test_policy_remains_disabled_with_explicit_release_and_custody_refusals(self):
-        self.assertEqual("source-qualified-not-installed", self.policy["status"])
-        self.assertFalse(self.policy["credentialJob"]["installed"])
+    def test_policy_installs_only_the_verified_net_profile_release(self):
+        self.assertEqual("installed", self.policy["status"])
+        self.assertTrue(self.policy["credentialJob"]["installed"])
         self.assertEqual(3, self.policy["credentialJob"]["liveObservation"]["secretCount"])
         self.assertEqual(3, len(self.policy["credentialInventory"]))
-        self.assertEqual("awaiting-published-net-profile-release",
-                         self.policy["packagePin"]["status"])
-        self.assertIsNone(self.policy["packagePin"]["version"])
-        self.assertIsNone(self.policy["packagePin"]["sha256"])
-        self.assertIn("no immutable published CLI release",
-                      self.policy["packagePin"]["refusal"])
+        pin = self.policy["packagePin"]
+        self.assertEqual("published-verified", pin["status"])
+        self.assertEqual("0.1.5", pin["version"])
+        self.assertEqual("3567a92825917a7d537f6c5c545d3a7947bc35edd666fc3a1898de3bf97267c9",
+                         pin["sha256"])
+        self.assertEqual("1268908d2d5a38d30a764c927f3e0591e53138aa", pin["sourceCommit"])
+        self.assertTrue(pin["servedPackageVerified"])
         self.assertEqual(["OpenV2"], self.policy["unchangedGates"])
         self.assertEqual({"v1Admission": False, "receiverStateImport": False},
                          self.policy["migration"])

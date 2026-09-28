@@ -53,3 +53,35 @@ Do not enable the preflight or add a credential job until one reviewed source ch
 The later activation must change policy status, installed state, package evidence, observer guard,
 and the bounded credential job together. This disabled source cannot settle work and imports no V1
 admission or receiver state.
+
+## Activation handoff (prepared on 2026-09-28)
+
+The next source change is one reviewed activation PR based on protected `main`. Before editing it,
+read the public `FS.GG.Coordination.Cli` 0.1.5 release asset from the served feed, verify its SHA-256,
+and confirm that the published package implements `net-v1`. Record that exact digest and source commit
+in `packagePin`; a local build or an intended release version is insufficient.
+
+Refresh Net's repository ID, protected-main head, required check names and App IDs, workflow IDs and
+paths, and the `ordinary-v2` environment branch policy and three dedicated secret *names* from the
+native API. Re-read the shared Authority binding against its current source. On 2026-09-28 the Net
+readback matched repository ID `1305845505`, four required GitHub Actions App `15368` contexts,
+workflow IDs `316245439`, `316890379`, `316890380`, environment ID `22920188172`, its sole `main`
+branch policy ID `61287584`, and exactly the three names recorded above. These observations are a
+baseline, not permission to use stale values at activation.
+
+In that PR, enable the secret-free preflight, pass its receipt digest and activation result to a
+bounded `ordinary-v2` credential job, and use the installed public CLI archive only after checking
+its served SHA-256. The credential job must recheck the same-run receipt and current protected
+policy, workflow, and anchor before reading the dedicated secrets and executing one settlement
+attempt. Set policy status to `installed`, `credentialJob.installed` to true, and pin the verified
+package in the same source change. Update the source tests so an enabled workflow is checked for
+the receipt fence, local-only package install, exact secret inventory, and absence of request or
+manual trigger paths.
+
+The clean source gate for this repository is the two Python receiver test files followed by
+`dotnet restore FS.GG.Net.slnx --locked-mode`, `dotnet build FS.GG.Net.slnx -c Debug --no-restore`,
+and `dotnet test FS.GG.Net.slnx -c Debug --no-build --no-restore`. If the shared NuGet cache raises
+`NU1403` for `FSharp.Core 10.1.401`, use a fresh task-specific `NUGET_PACKAGES` directory; the
+isolated locked restore, build, and both test assemblies passed at this handoff. Preserve all four
+native required checks, merge the exact green PR head, read back the merged Authority, and verify
+the ordinary `AlreadyComplete` rerun behavior before recording installed operation.

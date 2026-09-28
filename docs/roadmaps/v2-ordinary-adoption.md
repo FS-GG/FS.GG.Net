@@ -1,6 +1,7 @@
 # C3-NET-01 — Ordinary V2 receiver adoption
 
-Status: source prepared and disabled. CLI release, custody, installation, and activation remain pending.
+Status: source prepared and disabled. Dedicated custody is enrolled; CLI release, installation, and
+activation remain pending.
 
 FS.GG.Net is the fixed C3 source repository (`FS-GG/FS.GG.Net`, repository ID
 `1305845505`) under the code-owned `net-v1` profile. This change adds only repository-owned
@@ -29,12 +30,14 @@ check, generated workspace content, or protected effect.
 - The shared policy ID remains `v2-ci-i1-ordinary-settlement-v1`; the shared Authority anchor retains
   App `5064713`, installation `164553252`, repository `FS-GG/FS.GG.Coordination.Authority`
   (`1351660651`), `contents:write`, metadata read, and the existing writer/integrity ruleset pins.
-- Read-only API observation at `2026-09-28T11:55:40Z`, against Net main
+- Read-only API observation at `2026-09-28T12:22:05Z`, against Net main
   `2fe9c00976b5d01c36fbd587c21135b650cf43b9`, found the `ordinary-v2` environment as ID
-  `22920188172`, restricted to the single `main` branch policy ID `61287584`, with no reviewers
-  and zero secrets. No credential is enrolled.
+  `22920188172`, restricted to the single `main` branch policy ID `61287584`, with no reviewers.
+  Protected custody bridge run `36419999006` succeeded and the environment now reads back the exact
+  three dedicated ordinary-v2 secret names.
 - No immutable published CLI release with `net-v1` support is selected. Version and package
-  SHA-256 remain null, and policy explicitly refuses activation rather than borrowing Audio's pin.
+  SHA-256 remain null, and policy explicitly refuses activation until a served package digest is
+  independently verified.
 - Net already pins .NET SDK `10.0.401` in the repository's tracked `global.json`. This
   receiver leaves that pin unchanged and invokes no .NET setup while disabled.
 
@@ -44,11 +47,9 @@ Do not enable the preflight or add a credential job until one reviewed source ch
 
 1. an immutable published Coordination CLI supports the exact `net-v1` source profile and its
    served package SHA-256 is pinned;
-2. all three dedicated ordinary-v2 credentials are enrolled and independently read back without V1
-   or callable-operation credential reuse; and
-3. Net identity, exact current required-check population, producer mappings, and shared
+2. Net identity, exact current required-check population, producer mappings, and shared
    Authority binding are freshly read back.
 
-The later activation must change policy status, installed state, package evidence, credential
-inventory, observer guard, and the bounded credential job together. This disabled source cannot
-settle work and imports no V1 admission or receiver state.
+The later activation must change policy status, installed state, package evidence, observer guard,
+and the bounded credential job together. This disabled source cannot settle work and imports no V1
+admission or receiver state.

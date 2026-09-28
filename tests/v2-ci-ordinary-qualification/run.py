@@ -144,9 +144,9 @@ class NetQualificationTests(unittest.TestCase):
     def test_policy_remains_disabled_with_explicit_release_and_custody_refusals(self):
         self.assertEqual("source-qualified-not-installed", self.policy["status"])
         self.assertFalse(self.policy["credentialJob"]["installed"])
-        self.assertEqual(0, self.policy["credentialJob"]["liveObservation"]["secretCount"])
-        self.assertEqual([], self.policy["credentialInventory"])
-        self.assertEqual("unresolved-net-profile-release",
+        self.assertEqual(3, self.policy["credentialJob"]["liveObservation"]["secretCount"])
+        self.assertEqual(3, len(self.policy["credentialInventory"]))
+        self.assertEqual("awaiting-published-net-profile-release",
                          self.policy["packagePin"]["status"])
         self.assertIsNone(self.policy["packagePin"]["version"])
         self.assertIsNone(self.policy["packagePin"]["sha256"])

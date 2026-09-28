@@ -1,0 +1,144 @@
+{
+  "schema": "fsgg.github.v2-ci-ordinary-settlement-policy/1",
+  "policyId": "v2-ci-i1-ordinary-settlement-v1",
+  "status": "source-qualified-not-installed",
+  "repository": "FS-GG/FS.GG.Net",
+  "repositoryId": 1305845505,
+  "selectedSource": {
+    "profile": "net-v1",
+    "repository": "FS-GG/FS.GG.Net",
+    "repositoryId": 1305845505
+  },
+  "sourceImplementation": {
+    "repository": "FS-GG/FS.GG.Rendering",
+    "commit": "8f4acd853566ea287abd15655c1aa5c4d3ceb403",
+    "adaptation": "net-v1-code-owned-source-profile",
+    "observerSha256": "6e63f6f724fb267e77ef02f41b4c58a833e0dc5b08c003f07fd16c89e4f7fd55",
+    "qualificationSha256": "ff38a1b5748aaec8ff23561ae7c0c3eb67fb5232b9a4a43071dff22182dbac32"
+  },
+  "operationClass": "ordinary-post-merge-delivery-settlement",
+  "trigger": {
+    "event": "push",
+    "ref": "refs/heads/main",
+    "associationEndpoint": "GET /repos/FS-GG/FS.GG.Net/commits/{sourceSha}/pulls",
+    "associationCount": 1,
+    "requireMerged": true,
+    "requireMergeCommitMatch": true
+  },
+  "workflow": {
+    "path": ".github/workflows/v2-ci-ordinary-settlement.yml",
+    "revision": "sourceSha",
+    "requestEventsForbidden": [
+      "pull_request",
+      "pull_request_target"
+    ],
+    "manualEventsForbidden": [
+      "workflow_dispatch",
+      "repository_dispatch"
+    ]
+  },
+  "qualification": {
+    "phase": "secret-free-predecessor",
+    "credentialAccess": false,
+    "producerStatus": "trusted-main-push-predecessor",
+    "currentValidatorRole": "native-API-derived-evidence",
+    "requiredCheckAppId": 15368,
+    "requiredChecks": [
+      "Build + test (locked restore)",
+      "contract-coherence / coherence"
+    ],
+    "requiredGateChecks": [
+      "Build + test (locked restore)",
+      "kit / coordination-kit",
+      "contract-coherence / coherence",
+      "materialize / receiver-validate"
+    ],
+    "checkProducers": {
+      "Build + test (locked restore)": {
+        "workflowId": 316245439,
+        "path": ".github/workflows/gate.yml",
+        "event": "pull_request"
+      },
+      "kit / coordination-kit": {
+        "workflowId": 316890379,
+        "path": ".github/workflows/coordination-coherence.yml",
+        "event": "pull_request"
+      },
+      "contract-coherence / coherence": {
+        "workflowId": 316245439,
+        "path": ".github/workflows/gate.yml",
+        "event": "pull_request"
+      },
+      "materialize / receiver-validate": {
+        "workflowId": 316890380,
+        "path": ".github/workflows/kit-materialize.yml",
+        "event": "pull_request"
+      }
+    }
+  },
+  "credentialJob": {
+    "environment": "ordinary-v2",
+    "runner": "github-hosted-ephemeral",
+    "requiredReviewers": 0,
+    "protectedBranchesOnly": true,
+    "allowedBranches": [
+      "main"
+    ],
+    "installed": false,
+    "liveObservation": {
+      "observedAt": "2026-09-28T11:55:40Z",
+      "environmentPresent": true,
+      "environmentId": 22920188172,
+      "environmentNodeId": "EN_kwDOTdWfAc8AAAAFViZRDA",
+      "branchPolicyId": 61287584,
+      "branchPolicyNodeId": "MDE2OkdhdGVCcmFuY2hQb2xpY3k2MTI4NzU4NA==",
+      "customBranchPolicy": "main",
+      "customBranchPolicyCount": 1,
+      "protectedBranches": false,
+      "customBranchPolicies": true,
+      "canAdminsBypass": true,
+      "requiredReviewerCount": 0,
+      "secretCount": 0,
+      "disposition": "main-only-environment-present-custody-pending"
+    }
+  },
+  "packagePin": {
+    "status": "unresolved-net-profile-release",
+    "version": null,
+    "sha256": null,
+    "servedPackageVerified": false,
+    "requiredCapability": "net-v1 selected source",
+    "requiredBeforeActivation": true,
+    "refusal": "no immutable published CLI release with net-v1 support is selected"
+  },
+  "credentialInventory": [],
+  "activationEvidence": {
+    "observedAt": "2026-09-28T11:55:40Z",
+    "sourceMainSha": "2fe9c00976b5d01c36fbd587c21135b650cf43b9",
+    "sourceRepositoryId": 1305845505,
+    "requiredCheckAppId": 15368,
+    "requiredGateChecks": [
+      "Build + test (locked restore)",
+      "kit / coordination-kit",
+      "contract-coherence / coherence",
+      "materialize / receiver-validate"
+    ]
+  },
+  "activationPrerequisites": [
+    "published immutable Coordination CLI with net-v1 support and verified package SHA-256",
+    "all three dedicated ordinary-v2 secrets are enrolled and read back",
+    "current source-check population and shared Authority binding are read back again"
+  ],
+  "forbiddenCredentialReuse": [
+    "CALLABLE_ISOLATED_OPERATION_APP_PRIVATE_KEY",
+    "V1_ADMISSION_AUTHORIZER_PRIVATE_KEY",
+    "V1_ADMISSION_APP_PRIVATE_KEY"
+  ],
+  "unchangedGates": [
+    "OpenV2"
+  ],
+  "migration": {
+    "v1Admission": false,
+    "receiverStateImport": false
+  }
+}

@@ -148,10 +148,10 @@ class NetQualificationTests(unittest.TestCase):
         self.assertEqual(3, len(self.policy["credentialInventory"]))
         pin = self.policy["packagePin"]
         self.assertEqual("published-verified", pin["status"])
-        self.assertEqual("0.1.5", pin["version"])
-        self.assertEqual("3567a92825917a7d537f6c5c545d3a7947bc35edd666fc3a1898de3bf97267c9",
+        self.assertEqual("0.3.0", pin["version"])
+        self.assertEqual("a8cd6d602e1203257e1241df0b5dfdb9d867334b46dc406d8cdaa8e6d2b3019c",
                          pin["sha256"])
-        self.assertEqual("1268908d2d5a38d30a764c927f3e0591e53138aa", pin["sourceCommit"])
+        self.assertEqual("8eef1ab7f205132553632e03dc650e7ecdd03679", pin["sourceCommit"])
         self.assertTrue(pin["servedPackageVerified"])
         self.assertEqual(["OpenV2"], self.policy["unchangedGates"])
         self.assertEqual({"v1Admission": False, "receiverStateImport": False},

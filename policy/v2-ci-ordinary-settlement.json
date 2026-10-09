@@ -10,10 +10,10 @@
     "repositoryId": 1305845505
   },
   "sourceImplementation": {
-    "repository": "FS-GG/FS.GG.Rendering",
-    "commit": "8f4acd853566ea287abd15655c1aa5c4d3ceb403",
-    "adaptation": "net-v1-code-owned-source-profile",
-    "observerSha256": "6e63f6f724fb267e77ef02f41b4c58a833e0dc5b08c003f07fd16c89e4f7fd55",
+    "repository": "FS-GG/FS.GG.Coordination",
+    "commit": "8eef1ab7f205132553632e03dc650e7ecdd03679",
+    "adaptation": "net-v1-code-owned-source-profile; main-storage extension with local profile preserved",
+    "observerSha256": "7f5500d810ab9169d967f8c19fbcb01d706ebf82fdeea6e4a6927b0b19eef29a",
     "qualificationSha256": "ff38a1b5748aaec8ff23561ae7c0c3eb67fb5232b9a4a43071dff22182dbac32"
   },
   "operationClass": "ordinary-post-merge-delivery-settlement",
@@ -109,14 +109,14 @@
   },
   "packagePin": {
     "status": "published-verified",
-    "version": "0.1.5",
-    "sha256": "3567a92825917a7d537f6c5c545d3a7947bc35edd666fc3a1898de3bf97267c9",
+    "version": "0.3.0",
+    "sha256": "a8cd6d602e1203257e1241df0b5dfdb9d867334b46dc406d8cdaa8e6d2b3019c",
+    "sourceCommit": "8eef1ab7f205132553632e03dc650e7ecdd03679",
     "servedPackageVerified": true,
-    "sourceCommit": "1268908d2d5a38d30a764c927f3e0591e53138aa",
-    "releaseTag": "v0.1.5",
-    "publisherRunId": 36437778484,
+    "requiredBeforeActivation": true,
     "requiredCapability": "net-v1 selected source",
-    "requiredBeforeActivation": true
+    "publisherRunId": 37983508705,
+    "releaseTag": "v0.3.0"
   },
   "credentialInventory": [
     {

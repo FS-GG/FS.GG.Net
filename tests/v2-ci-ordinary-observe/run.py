@@ -104,12 +104,12 @@ class NetObservationSourceTests(unittest.TestCase):
         self.assertIn("FSGG_V2_SOURCE_PROFILE: net-v1", workflow)
         self.assertIn("persist-credentials: false", workflow)
         self.assertIn("python3 tools/v2-ci-ordinary-observe.py produce", workflow)
-        self.assertIn("python3 tools/v2-ci-ordinary-observe.py verify", workflow)
-        self.assertIn("PACKAGE_VERSION: 0.1.5", workflow)
-        self.assertIn("PACKAGE_SHA256: 3567a92825917a7d537f6c5c545d3a7947bc35edd666fc3a1898de3bf97267c9", workflow)
+        self.assertIn("python3 tools/v2-ci-ordinary-observe.py verify-main", workflow)
+        self.assertIn("PACKAGE_VERSION: 0.3.0", workflow)
+        self.assertIn("PACKAGE_SHA256: a8cd6d602e1203257e1241df0b5dfdb9d867334b46dc406d8cdaa8e6d2b3019c", workflow)
         self.assertIn("https://github.com/FS-GG/FS.GG.Coordination/releases/download/v$PACKAGE_VERSION/FS.GG.Coordination.Cli.$PACKAGE_VERSION.nupkg", workflow)
         self.assertNotIn("api.nuget.org/v3-flatcontainer", workflow)
-        self.assertIn("ordinary-settlement execute", workflow)
+        self.assertIn("ordinary-settlement execute-main", workflow)
         for name in ("V2_ORDINARY_APP_ID", "V2_ORDINARY_APP_PRIVATE_KEY", "V2_ORDINARY_AUTHORIZER_PRIVATE_KEY"):
             self.assertIn("${{ secrets." + name + " }}", workflow)
         for forbidden in ("workflow_dispatch:", "repository_dispatch:", "pull_request:", "pull_request_target:", "V1_ADMISSION", "CALLABLE_ISOLATED_OPERATION"):
@@ -134,8 +134,8 @@ class NetObservationSourceTests(unittest.TestCase):
         }, set(observation["secretNames"]))
         self.assertEqual("published-verified",
                          policy["packagePin"]["status"])
-        self.assertEqual("0.1.5", policy["packagePin"]["version"])
-        self.assertEqual("3567a92825917a7d537f6c5c545d3a7947bc35edd666fc3a1898de3bf97267c9",
+        self.assertEqual("0.3.0", policy["packagePin"]["version"])
+        self.assertEqual("a8cd6d602e1203257e1241df0b5dfdb9d867334b46dc406d8cdaa8e6d2b3019c",
                          policy["packagePin"]["sha256"])
         self.assertTrue(policy["packagePin"]["servedPackageVerified"])
         self.assertEqual(3, len(policy["credentialInventory"]))

@@ -64,7 +64,7 @@ jobs:
         run: tests/release/test-net-0-6-release.sh --source-only
 
   publish:
-    name: Publish packages (org feed + nuget.org)
+    name: Publish packages (org feed + nuget.org) [org-publication-writer]
     runs-on: ubuntu-latest
     if: github.repository == 'FS-GG/FS.GG.Net'
     needs: [verify]
@@ -74,6 +74,11 @@ jobs:
       packages: write     # push to the org GitHub Packages feed
       id-token: write     # ADR-0013: mint the GitHub OIDC token for nuget.org Trusted Publishing
     steps:
+      - name: Acquire org publication writer lock
+        uses: FS-GG/.github/.github/actions/publication-writer-lock@c799a9f9b21d52eb9766cf0950722e3e55145d39 # ADR-0097
+        with:
+          max-wait-minutes: 30
+        timeout-minutes: 32
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.version != '' && format('refs/tags/v{0}', inputs.version) || github.ref }}

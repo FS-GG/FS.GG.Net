@@ -10,11 +10,11 @@
       },
       "Grpc.Net.Client": {
         "type": "Direct",
-        "requested": "[2.84.0, )",
-        "resolved": "2.84.0",
-        "contentHash": "My6Fms2YCyAbihTBZZ3kLS39iTY2pkMAzGDBTC6XhPOujg70eB07AEJ7tPiW3tZ70bhFzHcc3+d4j3DaIPF3aA==",
+        "requested": "[2.85.0, )",
+        "resolved": "2.85.0",
+        "contentHash": "BPMA5mb96ihVQfXTuIUpC1aie2I0ODBD6QCc0UXYS5zQMK6sJW5yck8NZ2ffvGHfOanWyn2Yg0tJbYY3nV+zIw==",
         "dependencies": {
-          "Grpc.Net.Common": "2.84.0",
+          "Grpc.Net.Common": "2.85.0",
           "Microsoft.Extensions.Logging.Abstractions": "8.0.1"
         }
       },
@@ -30,15 +30,15 @@
       },
       "Grpc.Core.Api": {
         "type": "Transitive",
-        "resolved": "2.84.0",
-        "contentHash": "p2SOMl6q/GZ4/5MLkgboC/z55g4zKUEruRn/g46QgppjQBVnsLZVBU/9VO7n60ll38G3Eo8Zu9b7x+W01GKFVg=="
+        "resolved": "2.85.0",
+        "contentHash": "cpYu/nw/QhwHcRZMJbYD8lEllKrdwYMiDS4U3oH61nhYPUMNkcCcef4ulv11svHvTBThYV+ju332N9bCrfe7cQ=="
       },
       "Grpc.Net.Common": {
         "type": "Transitive",
-        "resolved": "2.84.0",
-        "contentHash": "DPxm/H8G/lDRrz997wM0M2zN/PGqVeZKDakhBbtABEbv6WIW4HI9g3BvntBQT6ZUROuGacMzfyyF9e5kiTVFfQ==",
+        "resolved": "2.85.0",
+        "contentHash": "e+RczhQVHb5MacI1oMTLMK6InZLH22POZcE4gsy5SnolsElLaqhSwEhqm+cF0m4Q1JGmlhjf1nbnKh7sBbjJVg==",
         "dependencies": {
-          "Grpc.Core.Api": "2.84.0"
+          "Grpc.Core.Api": "2.85.0"
         }
       },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
@@ -56,18 +56,18 @@
       },
       "Microsoft.Extensions.ObjectPool": {
         "type": "Transitive",
-        "resolved": "10.0.0",
-        "contentHash": "bpeCq0IYmVLACyEUMzFIOQX+zZUElG1t+nu1lSxthe7B+1oNYking7b91305+jNB6iwojp9fqTY9O+Nh7ULQxg=="
+        "resolved": "10.0.13",
+        "contentHash": "NX3bhcc0WitPKAVc9Zfi8jeEPClhfEmobUJM4a4bkWhJcBt5IWg6lCrItUoFy4whLjU+atXktURYCweQlR7wfg=="
       },
       "protobuf-net.Core": {
         "type": "Transitive",
-        "resolved": "3.4.30",
-        "contentHash": "CZf8U6eON9OBtcPyOiXJ6Oq3Opi/lWtEiireyLCy43iof1A2oA0GEOrEHZISzmQ46s61iOC06Sa4Cs+D41t1DA=="
+        "resolved": "3.4.40",
+        "contentHash": "UDQ8fbEKqpQktJfFyqkZ22S7P01sJWNmqkYjzbwZdZUHFwHIDigmWIzxmExF7NjbNoTqmv2Dfsu3rOpRHXK5EA=="
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
-        "resolved": "10.0.13",
-        "contentHash": "a+EovgC1fBnwdlQ6cn3j4JFBfKqiFaFvoAhjisOoSvazLAcIznaBzPQP0oYnvccmeXfqUH1KebVZOxSeH6rMaw=="
+        "resolved": "10.0.14",
+        "contentHash": "Wz+IgL2xpg8KJ4i2VWj6uz1PmZNu4Q0Ljlwd73P9Vze5NcOBtctLii3itV0PB2MpOqwqDEGfB6RCdv94A4E5yQ=="
       },
       "fs.gg.net.core": {
         "type": "Project",
@@ -80,7 +80,7 @@
         "dependencies": {
           "FS.GG.Net.Core": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )",
-          "Grpc.Net.Client": "[2.84.0, )",
+          "Grpc.Net.Client": "[2.85.0, )",
           "protobuf-net.Grpc": "[1.3.14, )"
         }
       },
@@ -90,7 +90,7 @@
           "FS.GG.Net.Core": "[0.6.0, )",
           "FSharp.Core": "[10.1.401, )",
           "Google.Protobuf": "[3.36.2, )",
-          "protobuf-net": "[3.4.30, )",
+          "protobuf-net": "[3.4.40, )",
           "protobuf-net-fsharp": "[0.2.1, )"
         }
       },
@@ -98,9 +98,9 @@
         "type": "Project",
         "dependencies": {
           "FSharp.Core": "[10.1.401, )",
-          "System.Security.Cryptography.Xml": "[10.0.13, )",
-          "System.ServiceModel.Primitives": "[10.0.652802, )",
-          "protobuf-net": "[3.4.30, )",
+          "System.Security.Cryptography.Xml": "[10.0.14, )",
+          "System.ServiceModel.Primitives": "[10.1.0, )",
+          "protobuf-net": "[3.4.40, )",
           "protobuf-net.Grpc": "[1.3.14, )"
         }
       },
@@ -112,11 +112,11 @@
       },
       "protobuf-net": {
         "type": "CentralTransitive",
-        "requested": "[3.4.30, )",
-        "resolved": "3.4.30",
-        "contentHash": "N49mhnY5fpWds085lO6ocppox9y4cTb1EmbHAAYVJMl/iYSYyNpz4Ohxnk80qtqv52dNZI+/6hQbaiz3+rTEwA==",
+        "requested": "[3.4.40, )",
+        "resolved": "3.4.40",
+        "contentHash": "Gds96uOs0bZlDfLIYHRMee1xmrWxUTLM9HSOlDzUmyzkTGDcMWw3Lgx9TPUxD94r+/E/Y9OEL5Cf3PiTHn9bfw==",
         "dependencies": {
-          "protobuf-net.Core": "3.4.30"
+          "protobuf-net.Core": "3.4.40"
         }
       },
       "protobuf-net-fsharp": {
@@ -131,21 +131,21 @@
       },
       "System.Security.Cryptography.Xml": {
         "type": "CentralTransitive",
-        "requested": "[10.0.13, )",
-        "resolved": "10.0.13",
-        "contentHash": "v6/GHhLaHkuN/ISgbKzBeyC7TP7S6Qm/dVyKA+p0ay9nlJyLif+spozjAGclY/FRIv2TC+KNQCo7dSNmupvWtQ==",
+        "requested": "[10.0.14, )",
+        "resolved": "10.0.14",
+        "contentHash": "qpDILpfJvj65+Pvpf5drWq2+mRNSrPffJsRYVQjBmEky+V34W+w2LXDZShq0miitf5qAPKuMAQ3CUaifaS2rrw==",
         "dependencies": {
-          "System.Security.Cryptography.Pkcs": "10.0.13"
+          "System.Security.Cryptography.Pkcs": "10.0.14"
         }
       },
       "System.ServiceModel.Primitives": {
         "type": "CentralTransitive",
-        "requested": "[10.0.652802, )",
-        "resolved": "10.0.652802",
-        "contentHash": "ULfGNl75BNXkpF42wNV2CDXJ64dUZZEa8xO2mBsc4tqbW9QjruxjEB6bAr4Z/T1rNU+leOztIjCJQYsBGFWYlw==",
+        "requested": "[10.1.0, )",
+        "resolved": "10.1.0",
+        "contentHash": "aFwU1C7xHmHKGt06PMMmaPWIn3RIP/kmF7WuazlTgSMbwDYXW4wIymax+KZegm2VWWljerevIY6m8EW/F/s1rg==",
         "dependencies": {
-          "Microsoft.Extensions.ObjectPool": "10.0.0",
-          "System.Security.Cryptography.Xml": "10.0.0"
+          "Microsoft.Extensions.ObjectPool": "10.0.13",
+          "System.Security.Cryptography.Xml": "10.0.13"
         }
       }
     }

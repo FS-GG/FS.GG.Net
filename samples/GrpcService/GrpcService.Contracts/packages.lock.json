@@ -10,11 +10,11 @@
       },
       "protobuf-net": {
         "type": "Direct",
-        "requested": "[3.4.30, )",
-        "resolved": "3.4.30",
-        "contentHash": "N49mhnY5fpWds085lO6ocppox9y4cTb1EmbHAAYVJMl/iYSYyNpz4Ohxnk80qtqv52dNZI+/6hQbaiz3+rTEwA==",
+        "requested": "[3.4.40, )",
+        "resolved": "3.4.40",
+        "contentHash": "Gds96uOs0bZlDfLIYHRMee1xmrWxUTLM9HSOlDzUmyzkTGDcMWw3Lgx9TPUxD94r+/E/Y9OEL5Cf3PiTHn9bfw==",
         "dependencies": {
-          "protobuf-net.Core": "3.4.30"
+          "protobuf-net.Core": "3.4.40"
         }
       },
       "protobuf-net.Grpc": {
@@ -29,21 +29,21 @@
       },
       "System.Security.Cryptography.Xml": {
         "type": "Direct",
-        "requested": "[10.0.13, )",
-        "resolved": "10.0.13",
-        "contentHash": "v6/GHhLaHkuN/ISgbKzBeyC7TP7S6Qm/dVyKA+p0ay9nlJyLif+spozjAGclY/FRIv2TC+KNQCo7dSNmupvWtQ==",
+        "requested": "[10.0.14, )",
+        "resolved": "10.0.14",
+        "contentHash": "qpDILpfJvj65+Pvpf5drWq2+mRNSrPffJsRYVQjBmEky+V34W+w2LXDZShq0miitf5qAPKuMAQ3CUaifaS2rrw==",
         "dependencies": {
-          "System.Security.Cryptography.Pkcs": "10.0.13"
+          "System.Security.Cryptography.Pkcs": "10.0.14"
         }
       },
       "System.ServiceModel.Primitives": {
         "type": "Direct",
-        "requested": "[10.0.652802, )",
-        "resolved": "10.0.652802",
-        "contentHash": "ULfGNl75BNXkpF42wNV2CDXJ64dUZZEa8xO2mBsc4tqbW9QjruxjEB6bAr4Z/T1rNU+leOztIjCJQYsBGFWYlw==",
+        "requested": "[10.1.0, )",
+        "resolved": "10.1.0",
+        "contentHash": "aFwU1C7xHmHKGt06PMMmaPWIn3RIP/kmF7WuazlTgSMbwDYXW4wIymax+KZegm2VWWljerevIY6m8EW/F/s1rg==",
         "dependencies": {
-          "Microsoft.Extensions.ObjectPool": "10.0.0",
-          "System.Security.Cryptography.Xml": "10.0.0"
+          "Microsoft.Extensions.ObjectPool": "10.0.13",
+          "System.Security.Cryptography.Xml": "10.0.13"
         }
       },
       "Grpc.Core.Api": {
@@ -53,18 +53,18 @@
       },
       "Microsoft.Extensions.ObjectPool": {
         "type": "Transitive",
-        "resolved": "10.0.0",
-        "contentHash": "bpeCq0IYmVLACyEUMzFIOQX+zZUElG1t+nu1lSxthe7B+1oNYking7b91305+jNB6iwojp9fqTY9O+Nh7ULQxg=="
+        "resolved": "10.0.13",
+        "contentHash": "NX3bhcc0WitPKAVc9Zfi8jeEPClhfEmobUJM4a4bkWhJcBt5IWg6lCrItUoFy4whLjU+atXktURYCweQlR7wfg=="
       },
       "protobuf-net.Core": {
         "type": "Transitive",
-        "resolved": "3.4.30",
-        "contentHash": "CZf8U6eON9OBtcPyOiXJ6Oq3Opi/lWtEiireyLCy43iof1A2oA0GEOrEHZISzmQ46s61iOC06Sa4Cs+D41t1DA=="
+        "resolved": "3.4.40",
+        "contentHash": "UDQ8fbEKqpQktJfFyqkZ22S7P01sJWNmqkYjzbwZdZUHFwHIDigmWIzxmExF7NjbNoTqmv2Dfsu3rOpRHXK5EA=="
       },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
-        "resolved": "10.0.13",
-        "contentHash": "a+EovgC1fBnwdlQ6cn3j4JFBfKqiFaFvoAhjisOoSvazLAcIznaBzPQP0oYnvccmeXfqUH1KebVZOxSeH6rMaw=="
+        "resolved": "10.0.14",
+        "contentHash": "Wz+IgL2xpg8KJ4i2VWj6uz1PmZNu4Q0Ljlwd73P9Vze5NcOBtctLii3itV0PB2MpOqwqDEGfB6RCdv94A4E5yQ=="
       }
     }
   }
